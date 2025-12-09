@@ -57,15 +57,23 @@ class _RegisterVerificationCodeViewState
         Mutation$Login$Widget(
             options:
                 WidgetOptions$Mutation$Login(onCompleted: (result, parsedData) {
+                  print('Login completed');
+                  print(parsedData);
+                  print(result);
               widget.onLoadingStateUpdated(true);
               final jwt = parsedData?.login.jwtToken;
-          
+              print('JWT: $jwt');
               if (jwt == null) return;
               Hive.box('user').put('jwt', jwt);
               widget.onLoadingStateUpdated(false);
               widget.onLoggedIn();
             }, onError: (error) {
                   print('Error 1: $error');
+                  print("ERROR GRAPHQL COMPLETO:");
+                  print("Raw error: $error");
+                  print("GraphQL errors: ${error?.graphqlErrors}");
+                  print("Link exception: ${error?.linkException}");
+
               widget.onLoadingStateUpdated(false);
               showOperationErrorMessage(context, error);
             }),
@@ -81,13 +89,15 @@ class _RegisterVerificationCodeViewState
                         PhoneAuthProvider.credential(
                             verificationId: widget.verificationCodeId,
                             smsCode: value);
-
-                    final UserCredential cr = await FirebaseAuth.instance
-                        .signInWithCredential(credential);
+                    print('credential: $credential');
+                    final UserCredential cr = await FirebaseAuth.instance.signInWithCredential(credential);
+                    print('CR: $cr');
                     final String firebaseToken = (await cr.user!.getIdToken())!;
+                    print('Firebase token: $firebaseToken');
                     runMutation(
                         Variables$Mutation$Login(firebaseToken: firebaseToken));
                   } on FirebaseAuthException catch (e) {
+                    print('error: $e');
                     widget.onLoadingStateUpdated(false);
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                         content: RidyBanner(
@@ -102,6 +112,10 @@ class _RegisterVerificationCodeViewState
           Mutation$SkipVerification$Widget(
               options: WidgetOptions$Mutation$SkipVerification(
                   onCompleted: (result, parsedData) {
+                    print('Skip verification completed');
+                print(parsedData);
+                print(result);
+
                 widget.onLoadingStateUpdated(true);
                 final jwt = parsedData?.skipVerification.jwtToken;
                 if (jwt == null) return;
@@ -116,6 +130,7 @@ class _RegisterVerificationCodeViewState
               builder: (runMutation, result) {
                 return TextButton(
                     onPressed: () {
+                      print('Skip verification');
                       widget.onLoadingStateUpdated(true);
                       runMutation(Variables$Mutation$SkipVerification(
                           mobileNumber: widget.phoneNumber));
