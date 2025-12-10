@@ -128,7 +128,9 @@ class RegisterContactDetailsView extends StatelessWidget {
                 onLoadingStateUpdated(false);
                 onContinue();
               },
-              onError: (error) => showOperationErrorMessage(context, error),
+              onError: (error) => {
+                print('Error en la pagina de registro: $error'),
+                showOperationErrorMessage(context, error)},
             ),
             builder: (runMutation, result) {
               return SizedBox(
