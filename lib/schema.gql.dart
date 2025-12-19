@@ -10931,6 +10931,7 @@ class Input$UpdateDriverInput {
     Enum$DriverStatus? status,
     String? certificateNumber,
     String? email,
+    String? password,
     String? carPlate,
     double? mediaId,
     Enum$Gender? gender,
@@ -10952,6 +10953,7 @@ class Input$UpdateDriverInput {
         if (status != null) r'status': status,
         if (certificateNumber != null) r'certificateNumber': certificateNumber,
         if (email != null) r'email': email,
+        if (password != null) r'password': password,
         if (carPlate != null) r'carPlate': carPlate,
         if (mediaId != null) r'mediaId': mediaId,
         if (gender != null) r'gender': gender,
@@ -11010,6 +11012,10 @@ class Input$UpdateDriverInput {
       final l$email = data['email'];
       result$data['email'] = (l$email as String?);
     }
+    if (data.containsKey('password')) {
+      final l$password = data['password'];
+      result$data['password'] = (l$password as String?);
+    }
     if (data.containsKey('carPlate')) {
       final l$carPlate = data['carPlate'];
       result$data['carPlate'] = (l$carPlate as String?);
@@ -11062,6 +11068,8 @@ class Input$UpdateDriverInput {
   Enum$DriverStatus? get status => (_$data['status'] as Enum$DriverStatus?);
   String? get certificateNumber => (_$data['certificateNumber'] as String?);
   String? get email => (_$data['email'] as String?);
+
+  String? get password => (_$data['password'] as String?);
   String? get carPlate => (_$data['carPlate'] as String?);
   double? get mediaId => (_$data['mediaId'] as double?);
   Enum$Gender? get gender => (_$data['gender'] as Enum$Gender?);
@@ -11114,6 +11122,10 @@ class Input$UpdateDriverInput {
     if (_$data.containsKey('email')) {
       final l$email = email;
       result$data['email'] = l$email;
+    }
+    if (_$data.containsKey('password')) {
+      final l$password = password;
+      result$data['password'] = l$password;
     }
     if (_$data.containsKey('carPlate')) {
       final l$carPlate = carPlate;
@@ -11256,6 +11268,14 @@ class Input$UpdateDriverInput {
     if (l$email != lOther$email) {
       return false;
     }
+    final l$password = password;
+    final lOther$password = other.password;
+    if (_$data.containsKey('password') != other._$data.containsKey('password')) {
+      return false;
+    }
+    if (l$password != lOther$password) {
+      return false;
+    }
     final l$carPlate = carPlate;
     final lOther$carPlate = other.carPlate;
     if (_$data.containsKey('carPlate') !=
@@ -11349,6 +11369,7 @@ class Input$UpdateDriverInput {
     final l$status = status;
     final l$certificateNumber = certificateNumber;
     final l$email = email;
+    final l$password = password;
     final l$carPlate = carPlate;
     final l$mediaId = mediaId;
     final l$gender = gender;
@@ -11369,6 +11390,7 @@ class Input$UpdateDriverInput {
       _$data.containsKey('status') ? l$status : const {},
       _$data.containsKey('certificateNumber') ? l$certificateNumber : const {},
       _$data.containsKey('email') ? l$email : const {},
+      _$data.containsKey('password') ? l$password : const {},
       _$data.containsKey('carPlate') ? l$carPlate : const {},
       _$data.containsKey('mediaId') ? l$mediaId : const {},
       _$data.containsKey('gender') ? l$gender : const {},
@@ -11404,6 +11426,7 @@ abstract class CopyWith$Input$UpdateDriverInput<TRes> {
     Enum$DriverStatus? status,
     String? certificateNumber,
     String? email,
+    String? password,
     String? carPlate,
     double? mediaId,
     Enum$Gender? gender,
@@ -11440,6 +11463,7 @@ class _CopyWithImpl$Input$UpdateDriverInput<TRes>
     Object? status = _undefined,
     Object? certificateNumber = _undefined,
     Object? email = _undefined,
+    Object? password = _undefined,
     Object? carPlate = _undefined,
     Object? mediaId = _undefined,
     Object? gender = _undefined,
@@ -11465,6 +11489,7 @@ class _CopyWithImpl$Input$UpdateDriverInput<TRes>
         if (certificateNumber != _undefined)
           'certificateNumber': (certificateNumber as String?),
         if (email != _undefined) 'email': (email as String?),
+        if (password != _undefined) 'password': (password as String?),
         if (carPlate != _undefined) 'carPlate': (carPlate as String?),
         if (mediaId != _undefined) 'mediaId': (mediaId as double?),
         if (gender != _undefined) 'gender': (gender as Enum$Gender?),
@@ -11497,6 +11522,7 @@ class _CopyWithStubImpl$Input$UpdateDriverInput<TRes>
     Enum$DriverStatus? status,
     String? certificateNumber,
     String? email,
+    String? password,
     String? carPlate,
     double? mediaId,
     Enum$Gender? gender,

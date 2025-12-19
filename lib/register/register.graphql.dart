@@ -836,6 +836,13 @@ const documentNodeQueryGetDriver = DocumentNode(definitions: [
             selectionSet: null,
           ),
           FieldNode(
+            name: NameNode(value: 'password'),
+            alias: null,
+            arguments: [],
+            directives: [],
+            selectionSet: null,
+          ),
+          FieldNode(
             name: NameNode(value: 'mobileNumber'),
             alias: null,
             arguments: [],
@@ -1156,6 +1163,7 @@ class Query$GetDriver$driver {
     this.lastName,
     this.gender,
     this.email,
+    this.password,
     required this.mobileNumber,
     this.accountNumber,
     this.bankName,
@@ -1178,6 +1186,7 @@ class Query$GetDriver$driver {
     final l$lastName = json['lastName'];
     final l$gender = json['gender'];
     final l$email = json['email'];
+    final l$password = json['password'];
     final l$mobileNumber = json['mobileNumber'];
     final l$accountNumber = json['accountNumber'];
     final l$bankName = json['bankName'];
@@ -1199,6 +1208,7 @@ class Query$GetDriver$driver {
       gender:
       l$gender == null ? null : fromJson$Enum$Gender((l$gender as String)),
       email: (l$email as String?),
+      password: (l$password as String?),
       mobileNumber: (l$mobileNumber as String),
       accountNumber: (l$accountNumber as String?),
       bankName: (l$bankName as String?),
@@ -1233,6 +1243,7 @@ class Query$GetDriver$driver {
 
   final String? email;
 
+  final String? password;
   final String mobileNumber;
 
   final String? accountNumber;
@@ -1274,6 +1285,8 @@ class Query$GetDriver$driver {
     l$gender == null ? null : toJson$Enum$Gender(l$gender);
     final l$email = email;
     _resultData['email'] = l$email;
+    final l$password = password;
+    _resultData['password'] =l$password;
     final l$mobileNumber = mobileNumber;
     _resultData['mobileNumber'] = l$mobileNumber;
     final l$accountNumber = accountNumber;
@@ -1311,6 +1324,7 @@ class Query$GetDriver$driver {
     final l$lastName = lastName;
     final l$gender = gender;
     final l$email = email;
+    final l$password = password;
     final l$mobileNumber = mobileNumber;
     final l$accountNumber = accountNumber;
     final l$bankName = bankName;
@@ -1331,6 +1345,7 @@ class Query$GetDriver$driver {
       l$lastName,
       l$gender,
       l$email,
+      l$password,
       l$mobileNumber,
       l$accountNumber,
       l$bankName,
@@ -1384,6 +1399,11 @@ class Query$GetDriver$driver {
     final l$email = email;
     final lOther$email = other.email;
     if (l$email != lOther$email) {
+      return false;
+    }
+    final l$password = password;
+    final lOther$password = other.password;
+    if (l$password != lOther$password) {
       return false;
     }
     final l$mobileNumber = mobileNumber;
@@ -1490,6 +1510,7 @@ abstract class CopyWith$Query$GetDriver$driver<TRes> {
     String? lastName,
     Enum$Gender? gender,
     String? email,
+    String? password,
     String? mobileNumber,
     String? accountNumber,
     String? bankName,
@@ -1533,6 +1554,7 @@ class _CopyWithImpl$Query$GetDriver$driver<TRes>
     Object? lastName = _undefined,
     Object? gender = _undefined,
     Object? email = _undefined,
+    Object? password = _undefined,
     Object? mobileNumber = _undefined,
     Object? accountNumber = _undefined,
     Object? bankName = _undefined,
@@ -1560,6 +1582,7 @@ class _CopyWithImpl$Query$GetDriver$driver<TRes>
         gender:
         gender == _undefined ? _instance.gender : (gender as Enum$Gender?),
         email: email == _undefined ? _instance.email : (email as String?),
+        password: password == _undefined ? _instance.password : (password as String?),
         mobileNumber: mobileNumber == _undefined || mobileNumber == null
             ? _instance.mobileNumber
             : (mobileNumber as String),
@@ -1629,6 +1652,7 @@ class _CopyWithStubImpl$Query$GetDriver$driver<TRes>
     String? lastName,
     Enum$Gender? gender,
     String? email,
+    String? password,
     String? mobileNumber,
     String? accountNumber,
     String? bankName,
@@ -4642,4 +4666,3 @@ class _CopyWithStubImpl$Mutation$SkipVerification$skipVerification<TRes>
 
   call({String? jwtToken}) => _res;
 }
-

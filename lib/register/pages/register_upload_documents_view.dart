@@ -303,7 +303,7 @@ class _RegisterUploadDocumentsViewState
     print(path);
     print(media);
     var postUri = Uri.parse(
-        "$serverUrl${media == UploadMedia.profile ? "upload_profile" : "upload_document"}");
+        "$serverUrl${media == UploadMedia.profile ? "api/driver/upload_profile" : "api/driver/upload_document"}");
     print(postUri);
     var request = http.MultipartRequest("POST", postUri);
     request.headers['Authorization'] =

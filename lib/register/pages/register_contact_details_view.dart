@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/messages.dart';
-
-
 import '../../query_result_view.dart';
 import '../../schema.gql.dart';
 import '../register.graphql.dart';
@@ -26,7 +24,7 @@ class RegisterContactDetailsView extends StatelessWidget {
       required this.gender,
       required this.certificateNumber,
       required this.address,
-      required this.email,
+
       required this.onContinue,
       required this.onLoadingStateUpdated});
 
@@ -136,7 +134,7 @@ class RegisterContactDetailsView extends StatelessWidget {
               return SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                 
+
                   onPressed: () async {
                     bool? isValid = _formKey.currentState?.validate();
                     if (isValid != true) return;
@@ -152,15 +150,12 @@ class RegisterContactDetailsView extends StatelessWidget {
                             address: address)));
                   },
                   child: Text(S.of(context).action_continue
-            
-            
-        
+
             )),
-                
-                
               );
             })
       ],
+
     );
   }
 }

@@ -1,11 +1,11 @@
 mutation UpdateProfile($input: UpdateDriverInput!) {
-  updateOneDriver(input: { id: "1", update: $input }) {
+  updateOneDriver(input: { id: 1, update: $input }) {
     id
   }
 }
 
 query GetDriver {
-  driver(id: "1") {
+  driver(id: 1) {
     id
     status
     firstName

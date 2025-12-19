@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/messages.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:sms_firebase/register/pages/register_contact_details_view.dart';
+import 'package:sms_firebase/register/pages/register_email_password_view.dart';
 import 'package:sms_firebase/register/pages/register_phone_number_view.dart';
 import 'package:sms_firebase/register/pages/register_ride_details_view.dart';
 import 'package:sms_firebase/register/pages/register_upload_documents_view.dart';
@@ -56,6 +57,8 @@ class _RegisterViewState extends State<RegisterView> {
                           title: S.of(context).register_step_phone_number),
                       WizardStepItem(
                           title: S.of(context).register_step_verify_number),
+                      WizardStepItem(
+                          title: S.of(context).register_step_email_password),
                       WizardStepItem(
                           title: S.of(context).register_step_contact_details),
                       WizardStepItem(
@@ -140,12 +143,22 @@ class _RegisterViewState extends State<RegisterView> {
                                       onLoadingStateUpdated: (loading) =>
                                           setState(() => isLoading = loading),
                                     );
-
                                   case 2:
+                                    return RegisterEmailPasswordView(
+                                      email: driver?.email,
+                                      password: driver?.password,
+                                      onContinue: () {
+                                        pageController.jumpToPage(3);
+                                      },
+                                      onLoadingStateUpdated: (loading) =>
+                                          setState(() => isLoading = loading),
+
+                                    );
+                                  case 3:
                                     return RegisterContactDetailsView(
                                       firstName: driver?.firstName,
                                       lastName: driver?.lastName,
-                                      email: driver?.email,
+
                                       gender: driver?.gender,
                                       certificateNumber:
                                           driver?.certificateNumber,
@@ -157,7 +170,7 @@ class _RegisterViewState extends State<RegisterView> {
                                           setState(() => isLoading = loading),
                                     );
 
-                                  case 3:
+                                  case 4:
                                     return RegisterRideDetailsView(
                                       models:
                                           result.parsedData?.carModels ?? [],
@@ -169,7 +182,7 @@ class _RegisterViewState extends State<RegisterView> {
                                           setState(() => isLoading = loading),
                                     );
 
-                                  case 4:
+                                  case 5:
                                     /*return RegisterPayoutDetailsView(
                                       bankName: driver?.bankName,
                                       accountNumber: driver?.accountNumber,
