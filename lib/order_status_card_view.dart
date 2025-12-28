@@ -16,8 +16,9 @@ import 'package:collection/collection.dart';
 
 import 'chat/chat.graphql.dart';
 import 'config.dart';
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 import 'graphql/order.fragment.graphql.dart';
+import 'l10n/messages.dart';
 import 'main.graphql.dart';
 import 'main_bloc.dart';
 import 'package:flutter/material.dart';

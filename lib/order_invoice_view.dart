@@ -1,11 +1,12 @@
 import 'package:client_shared/components/ridy_sheet_view.dart';
 import 'package:client_shared/components/sheet_title_view.dart';
 import 'package:client_shared/components/user_avatar_view.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme-ride.dart';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:sms_firebase/l10n/messages.dart';
 
-import 'package:flutter_gen/gen_l10n/messages.dart';
 
 
 import 'config.dart';

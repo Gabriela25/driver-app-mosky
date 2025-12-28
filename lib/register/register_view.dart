@@ -2,8 +2,9 @@ import 'package:client_shared/components/back_button.dart';
 import 'package:client_shared/components/query_result_view.dart';
 import 'package:client_shared/components/step_view.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:sms_firebase/l10n/messages.dart';
 import 'package:sms_firebase/register/pages/register_contact_details_view.dart';
 import 'package:sms_firebase/register/pages/register_email_password_view.dart';
 import 'package:sms_firebase/register/pages/register_phone_number_view.dart';
@@ -11,7 +12,6 @@ import 'package:sms_firebase/register/pages/register_ride_details_view.dart';
 import 'package:sms_firebase/register/pages/register_upload_documents_view.dart';
 import 'package:sms_firebase/register/pages/register_verification_code_view.dart';
 import 'package:sms_firebase/register/register.graphql.dart';
-
 
 import '../query_result_view.dart';
 import '../schema.gql.dart';

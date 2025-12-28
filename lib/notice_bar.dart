@@ -1,4 +1,5 @@
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+
+import 'package:client_shared/theme/theme-ride.dart';
 import 'package:flutter/material.dart';
 
 class NoticeBar extends StatelessWidget {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_gen/gen_l10n/messages.dart';
+import 'package:sms_firebase/l10n/messages.dart';
+
 
 import '../../query_result_view.dart';
 import '../../schema.gql.dart';

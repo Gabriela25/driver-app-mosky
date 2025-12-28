@@ -1,5 +1,5 @@
 import 'package:client_shared/components/back_button.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme-ride.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -9,7 +9,7 @@ import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:flutter_chat_types/flutter_chat_types.dart' as types;
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:flutter_gen/gen_l10n/messages.dart';
+import '../l10n/messages.dart';
 
 import '../config.dart';
 import '../graphql/order.fragment.graphql.dart';

@@ -1,6 +1,7 @@
 import 'package:client_shared/components/ridy_sheet_view.dart';
 import 'package:client_shared/components/user_avatar_view.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme.dart';
+
 import 'package:client_shared/unit_of_measurement.dart';
 import 'package:dotted_line/dotted_line.dart';
 import 'package:flutter/material.dart';
@@ -8,7 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 import 'package:geolocator/geolocator.dart';
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 import 'package:intl/intl.dart';
 import 'package:collection/collection.dart';
 import 'package:sms_firebase/schema.gql.dart';
@@ -16,6 +17,7 @@ import 'package:sms_firebase/schema.gql.dart';
 import 'config.dart';
 import 'current_location_cubit.dart';
 import 'graphql/order.fragment.graphql.dart';
+import 'l10n/messages.dart';
 
 class OrderItemView extends StatelessWidget {
   final Fragment$AvailableOrder order;

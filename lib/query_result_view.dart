@@ -1,11 +1,14 @@
 import 'package:client_shared/components/ridy_banner.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 import 'package:client_shared/components/query_result_view.dart';
+
+import 'l10n/messages.dart';
 
 class QueryResultView extends StatelessWidget {
   final QueryResult queryResult;

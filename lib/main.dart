@@ -21,7 +21,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sms_firebase/drawer_view.dart';
 import 'package:sms_firebase/maps-screen.dart';
 import 'package:country_codes/country_codes.dart';
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 import 'package:sms_firebase/query_result_view.dart';
 import 'package:sms_firebase/register/register_view.dart';
 import 'package:sms_firebase/schema.gql.dart';
@@ -30,6 +30,7 @@ import 'package:sms_firebase/unregistered_driver_messages_view.dart';
 import 'config.dart';
 import 'current_location_cubit.dart';
 import 'graphql_provider.dart';
+import 'l10n/messages.dart';
 import 'main.graphql.dart';
 import 'main_bloc.dart';
 import 'map_providers/google_map_provider.dart';

@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:client_shared/config.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme-ride.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';

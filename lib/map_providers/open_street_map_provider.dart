@@ -2,7 +2,8 @@ import 'dart:async';
 
 import 'package:client_shared/components/marker_new.dart';
 import 'package:client_shared/map_providers.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme-ride.dart';
+
 import 'package:flutter_map_animations/flutter_map_animations.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../config.dart';

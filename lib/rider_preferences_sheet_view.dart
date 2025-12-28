@@ -1,12 +1,14 @@
 import 'package:client_shared/components/sheet_title_view.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme-ride.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 import 'package:sms_firebase/schema.gql.dart';
 
 import 'graphql/order.fragment.graphql.dart';
+import 'l10n/messages.dart';
 
 class RiderPreferencesSheetView extends StatelessWidget {
   final List<Fragment$CurrentOrder$options> options;

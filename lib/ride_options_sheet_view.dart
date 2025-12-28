@@ -4,11 +4,12 @@ import 'package:client_shared/components/ride_option_item.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 
 import 'package:sms_firebase/query_result_view.dart';
 import 'package:sms_firebase/schema.gql.dart';
 
+import 'l10n/messages.dart';
 import 'main.graphql.dart';
 
 class RideOptionsSheetView extends StatelessWidget {

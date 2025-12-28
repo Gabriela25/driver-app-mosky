@@ -4,8 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:pinput/pinput.dart';
+import 'package:sms_firebase/l10n/messages.dart';
 
-import 'package:flutter_gen/gen_l10n/messages.dart';
+
 
 
 import '../../query_result_view.dart';

@@ -1,6 +1,7 @@
 import 'package:client_shared/components/ridy_banner.dart';
 import 'package:client_shared/config.dart';
-import 'package:client_shared/theme/theme-ride-conductor.dart';
+import 'package:client_shared/theme/theme-ride.dart';
+
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:country_codes/country_codes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,7 +10,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
-import 'package:flutter_gen/gen_l10n/messages.dart';
+import 'package:sms_firebase/l10n/messages.dart';
+
 
 
 import 'package:url_launcher/url_launcher.dart';
