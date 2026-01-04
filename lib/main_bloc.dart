@@ -195,6 +195,9 @@ class MainBloc extends Bloc<MainEvent, MainState> {
         case Enum$DriverStatus.PendingApproval:
         case Enum$DriverStatus.SoftReject:
         case Enum$DriverStatus.HardReject:
+        case Enum$DriverStatus.PreRegistered:
+          //emit(StatusUnregistered(event.driver));
+          //break;
         case Enum$DriverStatus.$unknown:
           emit(StatusUnregistered(event.driver));
       }

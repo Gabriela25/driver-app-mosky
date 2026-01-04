@@ -4,6 +4,7 @@ import 'package:client_shared/components/step_view.dart';
 import 'package:flutter/material.dart';
 
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:hive/hive.dart';
 import 'package:sms_firebase/l10n/messages.dart';
 import 'package:sms_firebase/register/pages/register_contact_details_view.dart';
 import 'package:sms_firebase/register/pages/register_email_password_view.dart';
@@ -11,9 +12,7 @@ import 'package:sms_firebase/register/pages/register_phone_number_view.dart';
 import 'package:sms_firebase/register/pages/register_ride_details_view.dart';
 import 'package:sms_firebase/register/pages/register_upload_documents_view.dart';
 import 'package:sms_firebase/register/pages/register_verification_code_view.dart';
-import 'package:sms_firebase/register/register.graphql.dart';
-
-import '../query_result_view.dart';
+import 'package:sms_firebase/register/get_driver_dynamic.dart';
 import '../schema.gql.dart';
 
 class RegisterView extends StatefulWidget {
@@ -30,7 +29,7 @@ class RegisterView extends StatefulWidget {
 
 class _RegisterViewState extends State<RegisterView> {
   int activePageId = 0;
-  PageController pageController = PageController(initialPage: 0);
+  PageController? pageController;
   String? verificationId;
   String? phoneNumber;
   bool isLoading = false;
@@ -71,153 +70,84 @@ class _RegisterViewState extends State<RegisterView> {
                     activePageId: activePageId,
                   ),
                   const SizedBox(height: 8),
-                  Query$GetDriver$Widget(
-                      options: Options$Query$GetDriver(
-                          fetchPolicy: FetchPolicy.noCache,
-                          onComplete: (result, parsedData) {
-                            if (parsedData?.driver.mobileNumber != null) {
-                              if (!RegisterView.allowedStatuses
-                                  .contains(parsedData?.driver.status)) {
-                                Navigator.pop(context);
-                                return;
-                              }
-                            }
-
-                            if (parsedData?.driver != null &&
-                                activePageId < 2) {
-                              WidgetsBinding.instance.addPostFrameCallback(
-                                  (timeStamp) => pageController.jumpToPage(2));
-                              setState(() {
-                                activePageId = 2;
-                              });
-                            }
-                            if (pageController.initialPage != activePageId) {
-                              WidgetsBinding.instance.addPostFrameCallback(
-                                  (timeStamp) =>
-                                      pageController.jumpToPage(activePageId));
+                  Builder(
+                    builder: (context) {
+                      final driverId = Hive.box('user').get('driverId');
+                      print('DEBUG: Valor actual de driverId en Hive antes del FutureBuilder: $driverId');
+                      pageController ??= PageController(initialPage: 0);
+                      return Expanded(
+                        child: PageView.builder(
+                          controller: pageController,
+                          itemCount: 6,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onPageChanged: (value) => setState(() => activePageId = value),
+                          itemBuilder: ((context, index) {
+                            switch (index) {
+                              case 0:
+                                return RegisterPhoneNumberView(
+                                  onCodeSent: (verificationId, phoneNumber) {
+                                    this.verificationId = verificationId;
+                                    this.phoneNumber = phoneNumber;
+                                    pageController!.jumpToPage(1);
+                                  },
+                                  onLoggedIn: () {
+                                    pageController!.jumpToPage(2);
+                                    setState(() {});
+                                  },
+                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                );
+                              case 1:
+                                return RegisterVerificationCodeView(
+                                  verificationCodeId: verificationId ?? '',
+                                  phoneNumber: phoneNumber ?? '',
+                                  onLoggedIn: () {
+                                    pageController!.jumpToPage(2);
+                                    setState(() {});
+                                  },
+                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                );
+                              case 2:
+                                return RegisterEmailPasswordView(
+                                  email: null,
+                                  password: null,
+                                  firstName: null,
+                                  lastName: null,
+                                  certificateNumber: null,
+                                  onContinue: () {
+                                    pageController!.jumpToPage(3);
+                                  },
+                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                );
+                              case 3:
+                                return RegisterContactDetailsView(
+                                  gender: null,
+                                  address: null,
+                                  onContinue: () {
+                                    pageController!.jumpToPage(4);
+                                  },
+                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                );
+                              case 4:
+                                return RegisterRideDetailsView(
+                                  onContinue: () => pageController!.jumpToPage(5),
+                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                );
+                              case 5:
+                                return RegisterUploadDocumentsView(
+                                  driverId: '',
+                                  documents: [],
+                                  profilePicture: null,
+                                  onUploaded: () => setState(() {}),
+                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                );
+                              default:
+                                return const Text("Unsupported state");
                             }
                           }),
-                      builder: (result, {refetch, fetchMore}) {
-                        if (result.isLoading) {
-                          return Expanded(
-                              child: QueryResultView(result, refetch: refetch));
-                        }
-                        final driver = result.parsedData?.driver;
-                        return Expanded(
-                          child: PageView.builder(
-                              controller: pageController,
-                              itemCount: 5,
-                              physics: const NeverScrollableScrollPhysics(),
-                              onPageChanged: (value) =>
-                                  setState(() => activePageId = value),
-                              itemBuilder: ((context, index) {
-                              
-                          
-
-                                switch (index) {
-
-                                  case 0:
-                                    return RegisterPhoneNumberView(
-                                      onCodeSent:
-                                          (verificationId, phoneNumber) {
-                                        this.verificationId = verificationId;
-                                        this.phoneNumber = phoneNumber;
-                                        pageController.jumpToPage(1);
-                                      },
-                                      onLoggedIn: () {
-                                        pageController.jumpToPage(2);
-                                        refetch!();
-                                      },
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-                                    );
-
-                                  case 1:
-                                    return RegisterVerificationCodeView(
-                                      verificationCodeId: verificationId!,
-                                      phoneNumber: phoneNumber!,
-                                      onLoggedIn: () {
-                                        pageController.jumpToPage(2);
-                                        refetch!();
-                                      },
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-                                    );
-                                  case 2:
-                                    return RegisterEmailPasswordView(
-                                      email: driver?.email,
-                                      password: driver?.password,
-                                      onContinue: () {
-                                        pageController.jumpToPage(3);
-                                      },
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-
-                                    );
-                                  case 3:
-                                    return RegisterContactDetailsView(
-                                      firstName: driver?.firstName,
-                                      lastName: driver?.lastName,
-
-                                      gender: driver?.gender,
-                                      certificateNumber:
-                                          driver?.certificateNumber,
-                                      address: driver?.address,
-                                      onContinue: () {
-                                        pageController.jumpToPage(3);
-                                      },
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-                                    );
-
-                                  case 4:
-                                    return RegisterRideDetailsView(
-                                      models:
-                                          result.parsedData?.carModels ?? [],
-                                      colors:
-                                          result.parsedData?.carColors ?? [],
-                                      onContinue: () =>
-                                          pageController.jumpToPage(4),
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-                                    );
-
-                                  case 5:
-                                    /*return RegisterPayoutDetailsView(
-                                      bankName: driver?.bankName,
-                                      accountNumber: driver?.accountNumber,
-                                      bankSwift: driver?.bankSwift,
-                                      bankRoutingNumber:
-                                          driver?.bankRoutingNumber,
-                                      onContinue: () =>
-                                          pageController.jumpToPage(5),
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-                                    );*/
-                                    return RegisterUploadDocumentsView(
-                                      driverId: driver!.id,
-                                      documents: driver.documents ?? [],
-                                      profilePicture: driver.media,
-                                      onUploaded: () => refetch!(),
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-                                    );
-                                  /*case 5:
-                                    return RegisterUploadDocumentsView(
-                                      driverId: driver!.id,
-                                      documents: driver.documents ?? [],
-                                      profilePicture: driver.media,
-                                      onUploaded: () => refetch!(),
-                                      onLoadingStateUpdated: (loading) =>
-                                          setState(() => isLoading = loading),
-                                    );*/
-
-                                  default:
-                                    return const Text("Unsupported state");
-                                }
-                              })),
-                        );
-                      })
+                        ),
+                      );
+                    },
+                  )
                 ],
               ),
               if (isLoading)

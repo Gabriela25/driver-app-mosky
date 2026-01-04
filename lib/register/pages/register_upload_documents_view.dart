@@ -9,6 +9,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:sms_firebase/l10n/messages.dart';
@@ -83,6 +84,7 @@ class _RegisterUploadDocumentsViewState
   }
   @override
   Widget build(BuildContext context) {
+     final client = GraphQLProvider.of(context).value;
     return Column(
       children: [
         Expanded(
@@ -137,6 +139,7 @@ class _RegisterUploadDocumentsViewState
                         setState(() {
                           profilePicture = profilePic;
                         });
+
                       }
                     }),
                 const SizedBox(height: 12),
@@ -161,6 +164,8 @@ class _RegisterUploadDocumentsViewState
                           setState(() {
                             documents = documents.followedBy([file]).toList();
                           });
+
+                          
                         }
                       },
                       child: SizedBox(
@@ -281,18 +286,70 @@ class _RegisterUploadDocumentsViewState
               return SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                    style: const ButtonStyle(
-                      backgroundColor:
-                      WidgetStatePropertyAll<Color>(Color(0xFF3CD7AC)),
-                    ),
-                    onPressed: () {
-                      widget.onLoadingStateUpdated(true);
-                      runMutation(Variables$Mutation$SetDocumentsOnDriver(
-                          driverId: widget.driverId,
-                          relationIds: documents.map((e) => e.id).toList()));
-                    },
-                    child: Text(
-                        S.of(context).action_confirm_and_continue )),
+                  style: const ButtonStyle(
+                    backgroundColor:
+                        WidgetStatePropertyAll<Color>(Color(0xFF3CD7AC)),
+                  ),
+                  onPressed: () async {
+                    widget.onLoadingStateUpdated(true);
+                    // Actualizar el driver con ambos cambios (foto y documentos)
+                    String? driverId = Hive.box('user').get('driverId')?.toString();
+                    print('DEBUG: driverId=$driverId');
+                    final client = GraphQLProvider.of(context).value;
+                    const String mutation = '''
+                      mutation UpdateOneDriver(\$input: UpdateOneDriverInput!) {
+                        updateOneDriver(input: \$input) {
+                          id
+                        }
+                      }
+                    ''';
+                    print('DEBUG: Ejecutando mutación updateOneDriver con ambos cambios...');
+                    try {
+                      final mutationResult = await client.mutate(MutationOptions(
+                        document: gql(mutation),
+                        variables: {
+                          'input': {
+                            'id': driverId,
+                            'update': {
+                              'mediaId': profilePicture?.id,
+                              'documents': documents.map((e) => e.id).toList(),
+                              'status': 'PendingApproval'
+                            }
+                          },
+                        },
+                      ));
+                      print('RESULTADO MUTACIÓN updateOneDriver: \\nData: \\${mutationResult.data}\\nException: \\${mutationResult.exception}');
+                      widget.onLoadingStateUpdated(false);
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: Text(demoMode
+                              ? S.of(context).title_important
+                              : S.of(context).title_success),
+                          content: Text(demoMode
+                              ? S.of(context).driver_registration_approved_demo_mode
+                              : S.of(context).driver_register_profile_submitted_message),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                int count = 0;
+                                Navigator.popUntil(context, (route) {
+                                  return count++ == 2;
+                                });
+                              },
+                              child: Text(S.of(context).action_ok),
+                            )
+                          ],
+                        ),
+                      );
+                    } catch (e) {
+                      widget.onLoadingStateUpdated(false);
+                      print('Error al ejecutar la mutación final: $e');
+                      showOperationErrorMessage(context, e as OperationException?);
+                    }
+                  },
+                  child: Text(S.of(context).action_confirm_and_continue),
+                ),
               );
             })
       ],
@@ -305,12 +362,16 @@ class _RegisterUploadDocumentsViewState
     print(path);
     print(media);
     var postUri = Uri.parse(
-        "$serverUrl${media == UploadMedia.profile ? "api/driver/upload_profile" : "api/driver/upload_document"}");
+        "$serverUrl${media == UploadMedia.profile ? "api/panel/upload_profile" : "api/panel/upload_document"}");
     print(postUri);
     var request = http.MultipartRequest("POST", postUri);
     request.headers['Authorization'] =
     'Bearer ${Hive.box('user').get('jwt').toString()}';
     request.files.add(await http.MultipartFile.fromPath('file', path));
+    // Agrega el driverId al form-data
+    print('AGREGANDO DRIVER ID AL FORM DATA ${Hive.box('user').get('driverId').toString()}');
+   
+    request.fields['driverId'] = Hive.box('user').get('driverId').toString();
     final streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
     var json = jsonDecode(response.body);

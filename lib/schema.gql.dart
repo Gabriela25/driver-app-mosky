@@ -12671,6 +12671,7 @@ enum Enum$DriverStatus {
   PendingApproval,
   SoftReject,
   HardReject,
+  PreRegistered,
   $unknown
 }
 
@@ -12692,7 +12693,10 @@ String toJson$Enum$DriverStatus(Enum$DriverStatus e) {
       return r'SoftReject';
     case Enum$DriverStatus.HardReject:
       return r'HardReject';
+    case Enum$DriverStatus.PreRegistered:
+      return r'PreRegistered';
     case Enum$DriverStatus.$unknown:
+    
       return r'$unknown';
   }
 }
@@ -12715,6 +12719,8 @@ Enum$DriverStatus fromJson$Enum$DriverStatus(String value) {
       return Enum$DriverStatus.SoftReject;
     case r'HardReject':
       return Enum$DriverStatus.HardReject;
+    case r'PreRegistered':
+      return Enum$DriverStatus.PreRegistered;
     default:
       return Enum$DriverStatus.$unknown;
   }

@@ -3,15 +3,12 @@ import 'package:client_shared/components/user_avatar_view.dart';
 import 'package:client_shared/theme/theme-ride.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:hive/hive.dart';
+
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:client_shared/config.dart';
 import 'package:sms_firebase/l10n/messages.dart';
-
 import 'config.dart';
 import 'graphql/order.fragment.graphql.dart';
-
-
 class DrawerView extends StatelessWidget {
   final Fragment$BasicProfile? driver;
 

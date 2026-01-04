@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sms_firebase/l10n/messages.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:graphql_flutter/graphql_flutter.dart';
 
 import '../../query_result_view.dart';
 import '../../schema.gql.dart';
@@ -8,10 +10,9 @@ import '../register.graphql.dart';
 class RegisterContactDetailsView extends StatelessWidget {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  String? firstName = "";
-  String? lastName = "";
+  
   Enum$Gender? gender;
-  String? certificateNumber = "";
+
   String? address = "";
   String? email = "";
 
@@ -20,10 +21,9 @@ class RegisterContactDetailsView extends StatelessWidget {
 
   RegisterContactDetailsView(
       {super.key,
-      required this.firstName,
-      required this.lastName,
+      
       required this.gender,
-      required this.certificateNumber,
+      
       required this.address,
 
       required this.onContinue,
@@ -68,44 +68,10 @@ class RegisterContactDetailsView extends StatelessWidget {
                           }),
                     ),
                     const SizedBox(height: 8),
-                    TextFormField(
-                      initialValue: firstName,
-                      onChanged: (value) => firstName = value,
-                      validator: (value) => value?.isEmpty ?? true
-                          ? S.of(context).form_required_field_error
-                          : null,
-                      decoration: InputDecoration(
-                          isDense: true, labelText: S.of(context).firstname),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      initialValue: lastName,
-                      onSaved: (value) => lastName = value,
-                      validator: (value) => value?.isEmpty ?? true
-                          ? S.of(context).form_required_field_error
-                          : null,
-                      decoration: InputDecoration(
-                          isDense: true, labelText: S.of(context).lastname),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      initialValue: certificateNumber,
-                      onChanged: (value) => certificateNumber = value,
-                      validator: (value) => value?.isEmpty ?? true
-                          ? S.of(context).form_required_field_error
-                          : null,
-                      decoration: InputDecoration(
-                          isDense: true,
-                          labelText: S.of(context).certificate_number),
-                    ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      initialValue: email,
-                      onChanged: (value) => email = value,
-                      decoration: InputDecoration(
-                          isDense: true, labelText: S.of(context).email),
-                    ),
-                    const SizedBox(height: 8),
+                    
+                   
+                    
+                    
                     TextFormField(
                       initialValue: address,
                       onChanged: (value) {
@@ -141,14 +107,62 @@ class RegisterContactDetailsView extends StatelessWidget {
                     if (isValid != true) return;
                     _formKey.currentState?.save();
                     onLoadingStateUpdated(true);
-                    runMutation(Variables$Mutation$UpdateProfile(
-                        input: Input$UpdateDriverInput(
-                            firstName: firstName,
-                            lastName: lastName,
-                            email: email,
-                            certificateNumber: certificateNumber,
-                            gender: gender,
-                            address: address)));
+
+                    // Obtener driverId de Hive
+                    String? driverId;
+                    try {
+                      final box = await Hive.openBox('user');
+                      driverId = box.get('driverId')?.toString();
+                    } catch (_) {
+                      driverId = null;
+                    }
+                    if (driverId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('No se encontró el driverId.')),
+                      );
+                      onLoadingStateUpdated(false);
+                      return;
+                    }
+
+                    // Ejecutar mutación manualmente
+                    final client = GraphQLProvider.of(context).value;
+                    const String mutation = '''
+                      mutation UpdateOneDriver(\$input: UpdateOneDriverInput!) {
+                        updateOneDriver(input: \$input) {
+                          id
+                        }
+                      }
+                    ''';
+                    try {
+                      final result = await client.mutate(MutationOptions(
+                        document: gql(mutation),
+                        variables: {
+                          'input': {
+                            'id': driverId,
+                            'update': {
+                              'email': email,
+                              'gender': gender?.name,
+                              'address': address,
+                            }
+                          }
+                        },
+                      ));
+                      if (result.hasException) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error al guardar: ${result.exception.toString()}')),
+                        );
+                        onLoadingStateUpdated(false);
+                        return;
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error al guardar: $e')),
+                      );
+                      onLoadingStateUpdated(false);
+                      return;
+                    }
+                    onLoadingStateUpdated(false);
+                    onContinue();
                   },
                   child: Text(S.of(context).action_continue
 

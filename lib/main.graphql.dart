@@ -8,9 +8,10 @@ import 'graphql/scalars/timestamp.dart';
 import 'schema.gql.dart';
 
 class Variables$Query$Me {
-  factory Variables$Query$Me({required int versionCode}) =>
+  factory Variables$Query$Me({required int versionCode, required String id}) =>
       Variables$Query$Me._({
         r'versionCode': versionCode,
+        r'id': id,
       });
 
   Variables$Query$Me._(this._$data);
@@ -19,16 +20,23 @@ class Variables$Query$Me {
     final result$data = <String, dynamic>{};
     final l$versionCode = data['versionCode'];
     result$data['versionCode'] = (l$versionCode as int);
+    if (data.containsKey('id')) {
+      final l$id = data['id'];
+      result$data['id'] = (l$id as String);
+    }
     return Variables$Query$Me._(result$data);
   }
 
   Map<String, dynamic> _$data;
 
   int get versionCode => (_$data['versionCode'] as int);
+  String get id => (_$data['id'] as String);
   Map<String, dynamic> toJson() {
     final result$data = <String, dynamic>{};
     final l$versionCode = versionCode;
     result$data['versionCode'] = l$versionCode;
+    final l$id = id;
+    result$data['id'] = l$id;
     return result$data;
   }
 
@@ -240,6 +248,15 @@ const documentNodeQueryMe = DocumentNode(definitions: [
         ),
         defaultValue: DefaultValueNode(value: null),
         directives: [],
+      ),
+      VariableDefinitionNode(
+        variable: VariableNode(name: NameNode(value: 'id')),
+        type: NamedTypeNode(
+          name: NameNode(value: 'ID'),
+          isNonNull: true,
+        ),
+        defaultValue: DefaultValueNode(value: null),
+        directives: [],
       )
     ],
     directives: [],
@@ -250,7 +267,7 @@ const documentNodeQueryMe = DocumentNode(definitions: [
         arguments: [
           ArgumentNode(
             name: NameNode(value: 'id'),
-            value: IntValueNode(value: '1'),
+            value: VariableNode(name: NameNode(value: 'id')),
           )
         ],
         directives: [],
@@ -9383,7 +9400,7 @@ const documentNodeMutationUpdateDriverStatus = DocumentNode(definitions: [
               ObjectFieldNode(
                 name: NameNode(value: 'id'),
                 value: StringValueNode(
-                  value: '1',
+                  value: '2',
                   isBlock: false,
                 ),
               ),
@@ -9634,9 +9651,10 @@ class Mutation$UpdateDriverStatus$Widget
 }
 
 class Variables$Mutation$UpdateDriverFCMId {
-  factory Variables$Mutation$UpdateDriverFCMId({String? fcmId}) =>
+  factory Variables$Mutation$UpdateDriverFCMId({String? fcmId, required String id}) =>
       Variables$Mutation$UpdateDriverFCMId._({
         if (fcmId != null) r'fcmId': fcmId,
+        r'id': id,
       });
 
   Variables$Mutation$UpdateDriverFCMId._(this._$data);
@@ -9648,17 +9666,26 @@ class Variables$Mutation$UpdateDriverFCMId {
       final l$fcmId = data['fcmId'];
       result$data['fcmId'] = (l$fcmId as String?);
     }
+    if (data.containsKey('id')) {
+      final l$id = data['id'];
+      result$data['id'] = (l$id as String);
+    }
     return Variables$Mutation$UpdateDriverFCMId._(result$data);
   }
 
   Map<String, dynamic> _$data;
 
   String? get fcmId => (_$data['fcmId'] as String?);
+  String get id => (_$data['id'] as String);
   Map<String, dynamic> toJson() {
     final result$data = <String, dynamic>{};
     if (_$data.containsKey('fcmId')) {
       final l$fcmId = fcmId;
       result$data['fcmId'] = l$fcmId;
+    }
+    if (_$data.containsKey('id')) {
+      final l$id = id;
+      result$data['id'] = l$id;
     }
     return result$data;
   }
@@ -9680,10 +9707,15 @@ class Variables$Mutation$UpdateDriverFCMId {
     }
     final l$fcmId = fcmId;
     final lOther$fcmId = other.fcmId;
+    final l$id = id;
+    final lOther$id = other.id;
     if (_$data.containsKey('fcmId') != other._$data.containsKey('fcmId')) {
       return false;
     }
     if (l$fcmId != lOther$fcmId) {
+      return false;
+    }
+    if (l$id != lOther$id) {
       return false;
     }
     return true;
@@ -9692,7 +9724,11 @@ class Variables$Mutation$UpdateDriverFCMId {
   @override
   int get hashCode {
     final l$fcmId = fcmId;
-    return Object.hashAll([_$data.containsKey('fcmId') ? l$fcmId : const {}]);
+    final l$id = id;
+    return Object.hashAll([
+      _$data.containsKey('fcmId') ? l$fcmId : const {},
+      l$id,
+    ]);
   }
 }
 
@@ -9848,6 +9884,15 @@ const documentNodeMutationUpdateDriverFCMId = DocumentNode(definitions: [
     name: NameNode(value: 'UpdateDriverFCMId'),
     variableDefinitions: [
       VariableDefinitionNode(
+        variable: VariableNode(name: NameNode(value: 'id')),
+        type: NamedTypeNode(
+          name: NameNode(value: 'ID'),
+          isNonNull: true,
+        ),
+        defaultValue: DefaultValueNode(value: null),
+        directives: [],
+      ),
+      VariableDefinitionNode(
         variable: VariableNode(name: NameNode(value: 'fcmId')),
         type: NamedTypeNode(
           name: NameNode(value: 'String'),
@@ -9868,10 +9913,7 @@ const documentNodeMutationUpdateDriverFCMId = DocumentNode(definitions: [
             value: ObjectValueNode(fields: [
               ObjectFieldNode(
                 name: NameNode(value: 'id'),
-                value: StringValueNode(
-                  value: '1',
-                  isBlock: false,
-                ),
+                value: VariableNode(name: NameNode(value: 'id')),
               ),
               ObjectFieldNode(
                 name: NameNode(value: 'update'),
