@@ -7,27 +7,49 @@ import '../../query_result_view.dart';
 import '../../schema.gql.dart';
 import '../register.graphql.dart';
 
-class RegisterContactDetailsView extends StatelessWidget {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  
-  Enum$Gender? gender;
-
-  String? address = "";
-  String? email = "";
-
+class RegisterContactDetailsView extends StatefulWidget {
+  final String? firstName;
+  final String? lastName;
+  final String? certificateNumber;
+  final Enum$Gender? gender;
+  final String? address;
   final Function() onContinue;
   final Function(bool loading) onLoadingStateUpdated;
 
-  RegisterContactDetailsView(
-      {super.key,
-      
-      required this.gender,
-      
-      required this.address,
+  const RegisterContactDetailsView({
+    super.key,
+    required this.firstName,
+    required this.lastName,
+    required this.certificateNumber,
+    required this.gender,
+    required this.address,
+    required this.onContinue,
+    required this.onLoadingStateUpdated,
+  });
 
-      required this.onContinue,
-      required this.onLoadingStateUpdated});
+  @override
+  State<RegisterContactDetailsView> createState() => _RegisterContactDetailsViewState();
+}
+
+class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView> {
+  final _formKey = GlobalKey<FormState>();
+  Enum$Gender? gender;
+  String? address;
+  String? email;
+  String? firstName;
+  String? lastName;
+  String? certificateNumber;
+
+  @override
+  void initState() {
+    super.initState();
+    gender = widget.gender;
+    address = widget.address;
+    email = "";
+    firstName = widget.firstName;
+    lastName = widget.lastName;
+    certificateNumber = widget.certificateNumber;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +67,37 @@ class RegisterContactDetailsView extends StatelessWidget {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 24),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      initialValue: firstName,
+                      onChanged: (value) => setState(() => firstName = value),
+                      validator: (value) => value?.isEmpty ?? true
+                          ? S.of(context).form_required_field_error
+                          : null,
+                      decoration: InputDecoration(
+                          isDense: true, labelText: S.of(context).firstname),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      initialValue: lastName,
+                      onChanged: (value) => setState(() => lastName = value),
+                      validator: (value) => value?.isEmpty ?? true
+                          ? S.of(context).form_required_field_error
+                          : null,
+                      decoration: InputDecoration(
+                          isDense: true, labelText: S.of(context).lastname),
+                    ),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      initialValue: certificateNumber,
+                      onChanged: (value) => setState(() => certificateNumber = value),
+                      validator: (value) => value?.isEmpty ?? true
+                          ? S.of(context).form_required_field_error
+                          : null,
+                      decoration: InputDecoration(
+                          isDense: true,
+                          labelText: S.of(context).certificate_number),
+                    ),
                     Container(
                       constraints: const BoxConstraints(maxWidth: 200),
                       child: DropdownButtonFormField<Enum$Gender>(
@@ -69,8 +122,7 @@ class RegisterContactDetailsView extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     
-                   
-                    
+ 
                     
                     TextFormField(
                       initialValue: address,
@@ -90,8 +142,8 @@ class RegisterContactDetailsView extends StatelessWidget {
         Mutation$UpdateProfile$Widget(
             options: WidgetOptions$Mutation$UpdateProfile(
               onCompleted: (result, parsedData) {
-                onLoadingStateUpdated(false);
-                onContinue();
+                widget.onLoadingStateUpdated(false);
+                widget.onContinue();
               },
               onError: (error) => {
                 print('Error en la pagina de registro: $error'),
@@ -106,7 +158,7 @@ class RegisterContactDetailsView extends StatelessWidget {
                     bool? isValid = _formKey.currentState?.validate();
                     if (isValid != true) return;
                     _formKey.currentState?.save();
-                    onLoadingStateUpdated(true);
+                    widget.onLoadingStateUpdated(true);
 
                     // Obtener driverId de Hive
                     String? driverId;
@@ -120,7 +172,7 @@ class RegisterContactDetailsView extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('No se encontró el driverId.')),
                       );
-                      onLoadingStateUpdated(false);
+                      widget.onLoadingStateUpdated(false);
                       return;
                     }
 
@@ -140,7 +192,9 @@ class RegisterContactDetailsView extends StatelessWidget {
                           'input': {
                             'id': driverId,
                             'update': {
-                              'email': email,
+                              'firstName': firstName,
+                              'lastName': lastName,
+                              'certificateNumber': certificateNumber,
                               'gender': gender?.name,
                               'address': address,
                             }
@@ -151,18 +205,18 @@ class RegisterContactDetailsView extends StatelessWidget {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Error al guardar: ${result.exception.toString()}')),
                         );
-                        onLoadingStateUpdated(false);
+                        widget.onLoadingStateUpdated(false);
                         return;
                       }
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Error al guardar: $e')),
                       );
-                      onLoadingStateUpdated(false);
+                      widget.onLoadingStateUpdated(false);
                       return;
                     }
-                    onLoadingStateUpdated(false);
-                    onContinue();
+                    widget.onLoadingStateUpdated(false);
+                    widget.onContinue();
                   },
                   child: Text(S.of(context).action_continue
 

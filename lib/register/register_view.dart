@@ -84,20 +84,22 @@ class _RegisterViewState extends State<RegisterView> {
                           itemBuilder: ((context, index) {
                             switch (index) {
                               case 0:
-                                return RegisterPhoneNumberView(
-                                  onCodeSent: (verificationId, phoneNumber) {
-                                    this.verificationId = verificationId;
-                                    this.phoneNumber = phoneNumber;
-                                    pageController!.jumpToPage(1);
-                                  },
-                                  onLoggedIn: () {
-                                    pageController!.jumpToPage(2);
-                                    setState(() {});
-                                  },
-                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
-                                );
+                                  return RegisterPhoneNumberView(
+                                    key: const ValueKey('register_phone_number_view'),
+                                    onCodeSent: (verificationId, phoneNumber) {
+                                      this.verificationId = verificationId;
+                                      this.phoneNumber = phoneNumber;
+                                      pageController!.jumpToPage(1);
+                                    },
+                                    onLoggedIn: () {
+                                      // Si el usuario ya está registrado, mostrar la pantalla de email y password
+                                      pageController!.jumpToPage(2);
+                                    },
+                                    onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                  );
                               case 1:
                                 return RegisterVerificationCodeView(
+                                  key: const ValueKey('register_verification_code_view'),
                                   verificationCodeId: verificationId ?? '',
                                   phoneNumber: phoneNumber ?? '',
                                   onLoggedIn: () {
@@ -108,18 +110,27 @@ class _RegisterViewState extends State<RegisterView> {
                                 );
                               case 2:
                                 return RegisterEmailPasswordView(
+                                  key: const ValueKey('register_email_password_view'),
                                   email: null,
                                   password: null,
-                                  firstName: null,
-                                  lastName: null,
-                                  certificateNumber: null,
                                   onContinue: () {
-                                    pageController!.jumpToPage(3);
+                                    // Si el usuario es existente y login fue exitoso, ir a la página principal
+                                    // Si es nuevo usuario, continuar al siguiente paso
+                                    final jwt = Hive.box('user').get('jwt');
+                                    if (jwt != null && jwt.toString().isNotEmpty) {
+                                      Navigator.of(context).pushReplacementNamed('/');
+                                    } else {
+                                      pageController!.jumpToPage(3);
+                                    }
                                   },
                                   onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
                                 );
                               case 3:
                                 return RegisterContactDetailsView(
+                                  key: const ValueKey('register_contact_details_view'),
+                                  firstName: null,
+                                  lastName: null,
+                                  certificateNumber: null,
                                   gender: null,
                                   address: null,
                                   onContinue: () {
@@ -129,11 +140,13 @@ class _RegisterViewState extends State<RegisterView> {
                                 );
                               case 4:
                                 return RegisterRideDetailsView(
+                                  key: const ValueKey('register_ride_details_view'),
                                   onContinue: () => pageController!.jumpToPage(5),
                                   onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
                                 );
                               case 5:
                                 return RegisterUploadDocumentsView(
+                                  key: const ValueKey('register_upload_documents_view'),
                                   driverId: '',
                                   documents: [],
                                   profilePicture: null,

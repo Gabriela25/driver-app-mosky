@@ -12,6 +12,9 @@ import 'package:flutter/services.dart';
 import 'package:hive/hive.dart';
 import 'package:sms_firebase/l10n/messages.dart';
 
+import 'package:graphql_flutter/graphql_flutter.dart';
+import 'register_email_password_view.dart';
+
 
 
 import 'package:url_launcher/url_launcher.dart';
@@ -41,7 +44,49 @@ class _RegisterPhoneNumberViewState extends State<RegisterPhoneNumberView> {
       ? (CountryCodes.detailsForLocale().alpha2Code ?? defaultCountryCode)
       : defaultCountryCode;
   String? phoneNumber;
-  final _formKey = GlobalKey<FormState>();
+  late final GlobalKey<FormState> _formKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _formKey = GlobalKey<FormState>();
+  }
+
+  Future<Map<String, dynamic>?> checkPhoneApproved(String phone) async {
+    print('Checking phone approval for: $phone');
+    final client = GraphQLProvider.of(context).value;
+    final String query = '''
+      query CheckPhone(
+       \$phone: String!
+      ) {
+        driverByPhone(phone: \$phone) {
+          id
+          status
+          email
+        }
+      }
+    ''';
+
+    final result = await client.query(QueryOptions(
+      document: gql(query),
+      variables: {'phone': phone},
+      fetchPolicy: FetchPolicy.networkOnly,
+    ));
+    print(  'GraphQL result: ' + result.toString());
+    if (result.hasException) {
+      print('GraphQL error: ' + result.exception.toString());
+      widget.onLoadingStateUpdated(false);
+      final snackBar = SnackBar(
+        content: RidyBanner(
+          result.exception.toString(),
+          type: BannerType.error,
+        ),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      return null;
+    }
+    return result.data?['driverByPhone'];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -143,91 +188,82 @@ class _RegisterPhoneNumberViewState extends State<RegisterPhoneNumberView> {
                 }),
           if (!demoMode)
             SizedBox(
-                width: double.infinity,
-                child: Mutation$Login$Widget(
-                  options: WidgetOptions$Mutation$Login(
-                    onCompleted: (result, parsedData) {
-                      final jwt = parsedData?.login.jwtToken;
-                      if (jwt == null) return;
-                      Hive.box('user').put('jwt', jwt);
-                      widget.onLoadingStateUpdated(false);
-                      widget.onLoggedIn();
-                    },
-                    onError: (error) {
-                      widget.onLoadingStateUpdated(false);
-                      showOperationErrorMessage(context, error);
-                    },
+              width: double.infinity,
+              child: ElevatedButton(
+                style: const ButtonStyle(
+                  backgroundColor:
+                      WidgetStatePropertyAll<Color>(Color(0xFF3CD7AC)),
+                ),
+                onPressed: ((loginTermsAndConditionsUrl.isNotEmpty &&
+                        !agreedToTerms))
+                    ? null
+                    : () async {
+                        if (!_formKey.currentState!.validate()) return;
+                        _formKey.currentState?.save();
+                        final String dialCode =
+                            CountryCode.fromCountryCode(countryCode)
+                                .dialCode!;
+                        final String fullPhoneNumber =
+                            dialCode + phoneNumber!;
+                        widget.onLoadingStateUpdated(true);
+                        final driver = await checkPhoneApproved(fullPhoneNumber);
+                        if (driver != null && driver['status'] == 'Offline') {
+                          // Si el número está registrado, solo login
+                          widget.onLoadingStateUpdated(false);
+                          widget.onLoggedIn();
+                        } else {
+                          // Si no está registrado, pedir código y luego email/password/contacto
+                          if (kIsWeb) {
+                            final authResult = await FirebaseAuth.instance
+                                .signInWithPhoneNumber(fullPhoneNumber);
+                            widget.onCodeSent(
+                                authResult.verificationId, fullPhoneNumber);
+                          } else {
+                            FirebaseAuth.instance.verifyPhoneNumber(
+                                phoneNumber: fullPhoneNumber,
+                                timeout: const Duration(minutes: 2),
+                                verificationCompleted: (PhoneAuthCredential
+                                    phoneAuthCredential) async {
+                                  final UserCredential cr =
+                                      await FirebaseAuth.instance
+                                          .signInWithCredential(
+                                              phoneAuthCredential);
+                                  final String firebaseToken =
+                                      (await cr.user!.getIdToken())!;
+                                  // Aquí podrías hacer login directo si lo deseas
+                                },
+                                verificationFailed:
+                                    (FirebaseAuthException error) {
+                                  widget.onLoadingStateUpdated(false);
+                                  final snackBar = SnackBar(
+                                      content: RidyBanner(
+                                          error.message ??
+                                              S
+                                                  .of(context)
+                                                  .message_unknown_error,
+                                          type: BannerType.error));
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(snackBar);
+                                },
+                                codeSent: (String verificationId,
+                                    int? forceResendingToken) {
+                                  widget.onLoadingStateUpdated(false);
+                                  widget.onCodeSent(
+                                      verificationId, fullPhoneNumber);
+                                },
+                                codeAutoRetrievalTimeout:
+                                    (String verificationId) {});
+                          }
+                        }
+                      },
+                child: Text(
+                  S.of(context).action_continue,
+                  style: TextStyle(
+                    color: Colors.black,
                   ),
-                  builder: (runMutation, result) => ElevatedButton(
-                      style: const ButtonStyle(
-                        backgroundColor:
-                            WidgetStatePropertyAll<Color>(Color(0xFF3CD7AC)),
-                      ),
-                      onPressed: ((loginTermsAndConditionsUrl.isNotEmpty &&
-                              !agreedToTerms))
-                          ? null
-                          : () async {
-                              if (!_formKey.currentState!.validate()) return;
-                              _formKey.currentState?.save();
-                              final String dialCode =
-                                  CountryCode.fromCountryCode(countryCode)
-                                      .dialCode!;
-                              final String fullPhoneNumber =
-                                  dialCode + phoneNumber!;
-                              widget.onLoadingStateUpdated(true);
-                              if (kIsWeb) {
-                                final authResult = await FirebaseAuth.instance
-                                    .signInWithPhoneNumber(fullPhoneNumber);
-                                widget.onCodeSent(
-                                    authResult.verificationId, fullPhoneNumber);
-                              } else {
-                                FirebaseAuth.instance.verifyPhoneNumber(
-                                    phoneNumber: fullPhoneNumber,
-                                    timeout: const Duration(minutes: 2),
-                                    verificationCompleted: (PhoneAuthCredential
-                                        phoneAuthCredential) async {
-                                      //comentado 1/4/2024 por errores de sms
-                                      final UserCredential cr =
-                                          await FirebaseAuth.instance
-                                              .signInWithCredential(
-                                                  phoneAuthCredential);
-                                      print('UserCredential $cr');
-                                      final String firebaseToken =
-                                          (await cr.user!.getIdToken())!;
-                                   
-                                      runMutation(Variables$Mutation$Login(
-                                          firebaseToken: firebaseToken));
-                                    },
-                                    verificationFailed:
-                                        (FirebaseAuthException error) {
-                                      widget.onLoadingStateUpdated(false);
-                                      final snackBar = SnackBar(
-                                          content: RidyBanner(
-                                              error.message ??
-                                                  S
-                                                      .of(context)
-                                                      .message_unknown_error,
-                                              type: BannerType.error));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(snackBar);
-                                    },
-                                    codeSent: (String verificationId,
-                                        int? forceResendingToken) {
-                                      widget.onLoadingStateUpdated(false);
-                                      widget.onCodeSent(
-                                          verificationId, fullPhoneNumber);
-                                    },
-                                    codeAutoRetrievalTimeout:
-                                        (String verificationId) {});
-                              }
-                            },
-                      child: Text(
-                        S.of(context).action_continue,
-                        style: TextStyle(
-                          color: Colors.black,
-                        ),
-                      )),
-                ))
+                ),
+              ),
+            )
         ],
       ),
     );

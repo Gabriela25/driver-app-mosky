@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:client_shared/config.dart';
 import 'package:sms_firebase/l10n/messages.dart';
 import 'config.dart';
@@ -154,11 +156,50 @@ class DrawerView extends StatelessWidget {
                     "${packageInfo.version} (Build ${packageInfo.buildNumber})",
                 applicationName: packageInfo.appName,
                 applicationLegalese:
-                    // ignore: use_build_context_synchronously
                     S.of(context).copyright_notice(companyName));
           },
         ),
         const Spacer(),
+        // Enlace para cerrar sesión
+        ListTile(
+          iconColor: CustomTheme.primaryColors.shade800,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          leading: const Icon(Ionicons.log_out),
+          minLeadingWidth: 20.0,
+          title: Text(
+            S.of(context).menu_logout,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          onTap: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text(S.of(context).title_logout),
+                content: Text(S.of(context).logout_dialog_body),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: Text(MaterialLocalizations.of(context).okButtonLabel),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed == true) {
+              // Cerrar sesión Firebase y limpiar datos locales
+              try {
+                await FirebaseAuth.instance.signOut();
+              } catch (e) {}
+              await Hive.box('user').delete('jwt');
+              // Navegar a la pantalla inicial
+              // ignore: use_build_context_synchronously
+              Navigator.of(context).popUntil((route) => route.isFirst);
+            }
+          },
+        ),
 
       ]),
     );

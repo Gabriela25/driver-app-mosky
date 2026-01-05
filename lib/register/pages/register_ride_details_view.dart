@@ -16,11 +16,17 @@ class RegisterRideDetailsView extends StatefulWidget {
 }
 
 class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
-  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late final GlobalKey<FormState> _formKey;
   String? carPlate;
   int? carProductionYear;
   String? carId;
   String? carColorId;
+
+  @override
+  void initState() {
+    super.initState();
+    _formKey = GlobalKey<FormState>();
+  }
 
   Future<Map<String, List<Map<String, String>>>> fetchModelsAndColors(GraphQLClient client) async {
     const String query = '''

@@ -34,6 +34,13 @@ class RegisterVerificationCodeView extends StatefulWidget {
 class _RegisterVerificationCodeViewState
     extends State<RegisterVerificationCodeView> {
   final FocusNode focusNode = FocusNode();
+  // No FormKey aquí, pero si agregas un Form, usa este patrón:
+  // late final GlobalKey<FormState> _formKey;
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _formKey = GlobalKey<FormState>();
+  // }
 
   @override
   void initState() {
