@@ -193,7 +193,9 @@ class DrawerView extends StatelessWidget {
               try {
                 await FirebaseAuth.instance.signOut();
               } catch (e) {}
-              await Hive.box('user').delete('jwt');
+              final userBox = Hive.box('user');
+              await userBox.delete('jwt');
+              await userBox.delete('driverId');
               // Navegar a la pantalla inicial
               // ignore: use_build_context_synchronously
               Navigator.of(context).popUntil((route) => route.isFirst);

@@ -106,24 +106,42 @@ class _RegisterViewState extends State<RegisterView> {
                                     pageController!.jumpToPage(2);
                                     setState(() {});
                                   },
-                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                  onLoadingStateUpdated: (loading) {
+                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
+                                    setState(() => isLoading = loading);
+                                  },
                                 );
                               case 2:
                                 return RegisterEmailPasswordView(
                                   key: const ValueKey('register_email_password_view'),
                                   email: null,
                                   password: null,
-                                  onContinue: () {
-                                    // Si el usuario es existente y login fue exitoso, ir a la página principal
-                                    // Si es nuevo usuario, continuar al siguiente paso
-                                    final jwt = Hive.box('user').get('jwt');
+                                  onContinue: () async {
+                                    final box = Hive.box('user');
+                                    final isNewRegistration = box.get('isNewRegistration') == true;
+                                    print('DEBUG: isNewRegistration en RegisterView = '
+                                        '${box.get('isNewRegistration')} (bool: $isNewRegistration)');
+                                    if (isNewRegistration) {
+                                      // Limpiar bandera para no interferir en futuros flujos
+                                      await box.put('isNewRegistration', false);
+                                      print('DEBUG: Avanzando a página 3 por nuevo registro');
+                                      pageController!.jumpToPage(3);
+                                      return;
+                                    }
+                                    final jwt = box.get('jwt');
+                                    print('DEBUG: jwt en RegisterView = $jwt');
                                     if (jwt != null && jwt.toString().isNotEmpty) {
+                                      print('DEBUG: Navegando a principal por JWT');
                                       Navigator.of(context).pushReplacementNamed('/');
                                     } else {
+                                      print('DEBUG: Avanzando a página 3 por fallback');
                                       pageController!.jumpToPage(3);
                                     }
                                   },
-                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                  onLoadingStateUpdated: (loading) {
+                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
+                                    setState(() => isLoading = loading);
+                                  },
                                 );
                               case 3:
                                 return RegisterContactDetailsView(
@@ -136,13 +154,19 @@ class _RegisterViewState extends State<RegisterView> {
                                   onContinue: () {
                                     pageController!.jumpToPage(4);
                                   },
-                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                  onLoadingStateUpdated: (loading) {
+                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
+                                    setState(() => isLoading = loading);
+                                  },
                                 );
                               case 4:
                                 return RegisterRideDetailsView(
                                   key: const ValueKey('register_ride_details_view'),
                                   onContinue: () => pageController!.jumpToPage(5),
-                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                  onLoadingStateUpdated: (loading) {
+                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
+                                    setState(() => isLoading = loading);
+                                  },
                                 );
                               case 5:
                                 return RegisterUploadDocumentsView(
@@ -151,7 +175,10 @@ class _RegisterViewState extends State<RegisterView> {
                                   documents: [],
                                   profilePicture: null,
                                   onUploaded: () => setState(() {}),
-                                  onLoadingStateUpdated: (loading) => setState(() => isLoading = loading),
+                                  onLoadingStateUpdated: (loading) {
+                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
+                                    setState(() => isLoading = loading);
+                                  },
                                 );
                               default:
                                 return const Text("Unsupported state");

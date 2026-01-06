@@ -39,6 +39,8 @@ import 'map_providers/open_street_map_provider.dart';
 import 'notice_bar.dart';
 import 'order_status_card_view.dart';
 import 'orders_carousel_view.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 // Inicialización de Flutter Local Notifications
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -160,258 +162,219 @@ class MyAppRoot extends StatelessWidget {
   }
 }
 
-class MyHomePage extends StatelessWidget with WidgetsBindingObserver {
-  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage>
+    with WidgetsBindingObserver {
+
+  final GlobalKey<ScaffoldState> scaffoldKey =
+  GlobalKey<ScaffoldState>();
+
   Refetch? refetch;
 
-  MyHomePage({super.key}) {
+  @override
+  void initState() {
+    super.initState();
     WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+
     final mainBloc = context.read<MainBloc>();
     final locationCubit = context.read<CurrentLocationCubit>();
+
     return Scaffold(
-        key: scaffoldKey,
-        drawer: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: Drawer(
-            backgroundColor: CustomTheme.primaryColors.shade100,
-            child: BlocBuilder<MainBloc, MainState>(
-              builder: (context, state) {
-                return DrawerView(
-                  driver: state.driver,
+      key: scaffoldKey,
+      drawer: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Drawer(
+          backgroundColor: CustomTheme.primaryColors.shade100,
+          child: BlocBuilder<MainBloc, MainState>(
+            builder: (context, state) {
+              return DrawerView(driver: state.driver);
+            },
+          ),
+        ),
+      ),
+      body: ValueListenableBuilder(
+        valueListenable: Hive.box('user').listenable(),
+        builder: (context, Box box, _) {
+          if (box.get('jwt') == null) {
+            return UnregisteredDriverMessagesView(
+              driver: null,
+              refetch: refetch,
+            );
+          }
+
+          return LifecycleWrapper(
+            onLifecycleEvent: (event) {
+              if (event == LifecycleEvent.active) {
+                refetch?.call();
+                updateNotificationId(context);
+              }
+            },
+            child: FutureBuilder<PackageInfo>(
+              future: PackageInfo.fromPlatform(),
+              builder: (context, snapshot) {
+                final driverId = box.get('driverId');
+
+                if (driverId == null ||
+                    driverId.toString().isEmpty ||
+                    driverId.toString() == 'null') {
+                  return const RegisterView();
+                }
+
+                return Query$Me$Widget(
+                  options: Options$Query$Me(
+                    variables: Variables$Query$Me(
+                      versionCode: int.parse(
+                        snapshot.data?.buildNumber ?? '999999',
+                      ),
+                      id: driverId.toString(),
+                    ),
+                    onComplete: (result, parsedData) {
+                      if (parsedData?.requireUpdate ==
+                          Enum$VersionStatus.MandatoryUpdate) {
+                        mainBloc.add(
+                          VersionStatusEvent(parsedData!.requireUpdate),
+                        );
+                        return;
+                      }
+
+                      if (parsedData?.driver != null) {
+                        mainBloc.add(
+                          DriverUpdated(parsedData!.driver),
+                        );
+                        locationCubit.setRadius(
+                          parsedData!.driver.searchDistance,
+                        );
+                      }
+                    },
+                  ),
+                  builder: (result, {refetch, fetchMore}) {
+                    if (result.isLoading || result.hasException) {
+                      return QueryResultView(
+                        result,
+                        refetch: refetch,
+                      );
+                    }
+
+                    this.refetch = refetch;
+
+                    return BlocConsumer<MainBloc, MainState>(
+                      listenWhen: (previous, next) {
+                        if (previous is StatusOnline &&
+                            next is StatusOnline) return false;
+                        return true;
+                      },
+                      listener: (context, state) {
+                        if (state is StatusOnline) {
+                          refetch?.call();
+                        }
+                      },
+                      builder: (context, state) {
+                        if (state is StatusUnregistered) {
+                          return UnregisteredDriverMessagesView(
+                            driver: state.driver,
+                            refetch: refetch,
+                          );
+                        }
+
+                        return Stack(
+                          children: [
+                            ValueListenableBuilder(
+                              valueListenable: Hive.box('settings')
+                                  .listenable(keys: ['mapProvider']),
+                              builder: (context, Box box, _) =>
+                                  getMapProvider(box),
+                            ),
+                            SafeArea(
+                              minimum: const EdgeInsets.all(16),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  _getMenuButton(),
+                                  const Spacer(),
+                                  _getOnlineOfflineButton(context, state),
+                                ],
+                              ),
+                            ),
+                            if (state is StatusOffline ||
+                                (state is StatusOnline &&
+                                    state.orders.isEmpty))
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: NoticeBar(
+                                  title: state is StatusOffline
+                                      ? S.of(context)
+                                      .status_offline_description
+                                      : S.of(context)
+                                      .status_online_description,
+                                ),
+                              ),
+                            if (state is StatusOnline)
+                              Positioned(
+                                bottom: 0,
+                                child: SizedBox(
+                                  width:
+                                  MediaQuery.of(context).size.width,
+                                  height: 320,
+                                  child: OrdersCarouselView(),
+                                ),
+                              ),
+                          ],
+                        );
+                      },
+                    );
+                  },
                 );
               },
             ),
-          ),
-        ),
-        body: ValueListenableBuilder(
-            valueListenable: Hive.box('user').listenable(),
-            builder: (context, Box box, widget) {
-              if (Hive.box('user').get('jwt') == null) {
-                return UnregisteredDriverMessagesView(
-                  driver: null,
-                  refetch: refetch,
-                );
-              }
-              return LifecycleWrapper(
-                  onLifecycleEvent: (event) {
-                    if (event == LifecycleEvent.active) {
-                      refetch?.call();
-                      updateNotificationId(context);
-                    }
-                  },
-                  child: FutureBuilder<PackageInfo>(
-                      future: PackageInfo.fromPlatform(),
-                      builder: (context, snapshot) {
-                        final driverId = Hive.box('user').get('driverId');
-                        if (driverId == null ||
-                            driverId.toString() == 'null' ||
-                            driverId.toString().isEmpty) {
-                          // Si no hay driverId, mostrar pantalla para llenar datos de registro
-                          return RegisterView();
-                        }
-                        final meVariables = Variables$Query$Me(
-                          versionCode:
-                              int.parse(snapshot.data?.buildNumber ?? "999999"),
-                          id: driverId.toString(),
-                        );
-
-                        print('Consulta Me (AST): $documentNodeQueryMe.');
-                        print('Variables Me: ${meVariables.toJson()}');
-
-                        return Query$Me$Widget(
-                            options: Options$Query$Me(
-                                variables: Variables$Query$Me(
-                                    versionCode: int.parse(
-                                        snapshot.data?.buildNumber ?? "999999"),
-                                    id: Hive.box('user')
-                                            .get('driverId')
-                                            .toString() ??
-                                        ''),
-                                onComplete: (result, parsedData) {
-                                  print('========== ME COMPLETADO ==========');
-                                  print('result.data (raw): ${result}');
-                                  print('parsedData: $parsedData');
-                                  print('result.exception: ${result}');
-                                  if (parsedData?.requireUpdate ==
-                                      Enum$VersionStatus.MandatoryUpdate) {
-                                    mainBloc.add(VersionStatusEvent(
-                                        parsedData!.requireUpdate));
-                                  } else {
-                                    if (parsedData?.driver != null) {
-                                      mainBloc.add(
-                                          DriverUpdated(parsedData!.driver));
-                                      locationCubit.setRadius(
-                                          parsedData.driver.searchDistance);
-                                    } else {
-                                      showDialog(
-                                          context: context,
-                                          builder: (context) {
-                                            return AlertDialog(
-                                                title: const Text("Driver"),
-                                                content: const Text(
-                                                    "Driver information not found, Do you want to logout and login again?"),
-                                                actions: [
-                                                  TextButton(
-                                                      onPressed: () {
-                                                        box.delete('jwt');
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: const Text("Yes")),
-                                                  TextButton(
-                                                      onPressed: () {
-                                                        Navigator.pop(context);
-                                                      },
-                                                      child: const Text("No"))
-                                                ]);
-                                          });
-                                    }
-                                  }
-                                }),
-                            builder: (result, {refetch, fetchMore}) {
-                              if (result.isLoading || result.hasException) {
-                                return QueryResultView(result,
-                                    refetch: refetch);
-                              }
-                              this.refetch = refetch;
-                              return BlocConsumer<MainBloc, MainState>(
-                                  listenWhen:
-                                      (MainState previous, MainState next) {
-                                if (previous is StatusUnregistered &&
-                                    next is StatusUnregistered &&
-                                    previous.driver?.status ==
-                                        next.driver?.status) {
-                                  return false;
-                                }
-                                if ((previous is StatusOnline) &&
-                                    next is StatusOnline) {
-                                  return false;
-                                }
-                                return true;
-                              }, listener: (context, state) {
-                                if (state is StatusOnline) {
-                                  refetch!();
-                                }
-                              }, builder: (context, state) {
-                                if (state is StatusUnregistered) {
-                                  // Navegación automática si el status es PreRegistered
-                                  if (state.driver?.status == Enum$DriverStatus.PreRegistered) {
-                                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                                      Navigator.of(context).pushReplacementNamed('register_contact_details');
-                                    });
-                                  }
-                                  return UnregisteredDriverMessagesView(
-                                      driver: state.driver, refetch: refetch);
-                                }
-                                return Stack(children: [
-                                  ValueListenableBuilder(
-                                      valueListenable: Hive.box('settings')
-                                          .listenable(keys: ['mapProvider']),
-                                      builder: (context, Box box, widget) =>
-                                          getMapProvider(box)),
-                                  SafeArea(
-                                    minimum: const EdgeInsets.all(16),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        _getMenuButton(),
-                                        //4/3/2024 comentado por cartera
-                                        /*const Spacer(),
-                                        _getWalletButton(context, state),*/
-                                        if (state is! StatusInService)
-                                          const Spacer(),
-                                        _getOnlineOfflineButton(context, state)
-                                      ],
-                                    ),
-                                  ),
-                                  if (state is StatusOffline ||
-                                      (state is StatusOnline &&
-                                          state.orders.isEmpty))
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: NoticeBar(
-                                          title: state is StatusOffline
-                                              ? S
-                                                  .of(context)
-                                                  .status_offline_description
-                                              : S
-                                                  .of(context)
-                                                  .status_online_description),
-                                    ),
-                                  if (state is StatusOnline)
-                                    Positioned(
-                                      bottom: 0,
-                                      child: SizedBox(
-                                          width:
-                                              MediaQuery.of(context).size.width,
-                                          height: 320,
-                                          child: OrdersCarouselView()),
-                                    ),
-                                  if (state is StatusInService &&
-                                      state.driver!.currentOrders.isNotEmpty)
-                                    Positioned(
-                                      bottom: 0,
-                                      child: Subscription$OrderUpdated$Widget(
-                                        onSubscriptionResult:
-                                            (subscriptionResult, client) {
-                                          if (subscriptionResult.data != null) {
-                                            WidgetsBinding.instance
-                                                .addPostFrameCallback((_) {
-                                              refetch!();
-                                            });
-                                          }
-                                        },
-                                        builder: (result) {
-                                          print(
-                                              'result.hasException: [33m${result.hasException}[0m');
-                                          print(
-                                              'result.exception: [31m${result.exception}[0m');
-                                          return SizedBox(
-                                            width: MediaQuery.of(context)
-                                                .size
-                                                .width,
-                                            child: OrderStatusCardView(
-                                              order: state
-                                                  .driver!.currentOrders.first,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    ),
-                                ]);
-                              });
-                            });
-                      }));
-            }));
+          );
+        },
+      ),
+    );
   }
+
+  // ===================== HELPERS =====================
 
   Widget getMapProvider(Box box) {
-    final String? provider = box.get('mapProvider', defaultValue: null);
-    if (provider == null) {
-      switch (mapProvider) {
-        case MapProvider.googleMap:
-          return GoogleMapProvider();
-        default:
-          // return  GoogleMapProvider();
-          return const OpenStreetMapProvider();
-      }
+    String? provider = box.get('mapProvider');
+    provider = 'googlemap';
+    if (provider == 'googlemap') {
+      return GoogleMapProvider();
     }
-    switch (provider) {
-      case 'googlemap':
-        return GoogleMapProvider();
-      default:
-        return const OpenStreetMapProvider();
-    }
+    return const OpenStreetMapProvider();
   }
 
-  Widget _getOnlineOfflineButton(BuildContext context, MainState state) {
+  Widget _getMenuButton() {
+    return FloatingActionButton(
+      heroTag: 'fabMenu',
+      mini: true,
+      elevation: 0,
+      backgroundColor: CustomTheme.secondaryColors.shade50,
+      foregroundColor: Colors.black,
+      onPressed: () => scaffoldKey.currentState?.openDrawer(),
+      child: const Icon(Icons.menu),
+    );
+  }
+
+  Widget _getOnlineOfflineButton (BuildContext context, MainState state) {
     final mainBloc = context.read<MainBloc>();
 
     return Mutation$UpdateDriverStatus$Widget(
@@ -476,49 +439,26 @@ class MyHomePage extends StatelessWidget with WidgetsBindingObserver {
       );
     });
   }
-
-  Widget _getMenuButton() {
-    return Container(
-      decoration: const BoxDecoration(boxShadow: [
-        BoxShadow(
-            color: Color(0x14000000), offset: Offset(3, 3), blurRadius: 25)
-      ]),
-      child: FloatingActionButton(
-          heroTag: 'fabMenu',
-          elevation: 0,
-          mini: true,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          onPressed: () => scaffoldKey.currentState?.openDrawer(),
-          backgroundColor: CustomTheme.secondaryColors.shade50,
-          foregroundColor: Colors.black,
-          child: const Icon(Icons.menu, color: null)),
+   
+  Future<void> updateNotificationId(BuildContext context) async {
+    final client = GraphQLClient(
+      cache: GraphQLCache(),
+      link: AuthLink(
+        getToken: () async =>
+        'Bearer ${Hive.box('user').get('jwt')}',
+      ).concat(HttpLink("${serverUrl}graphql")),
     );
-  }
 
-  Widget _getWalletButton(BuildContext context, MainState state) {
-    return Container(
-      decoration: const BoxDecoration(boxShadow: [
-        BoxShadow(
-            color: Color(0x14000000), offset: Offset(0, 3), blurRadius: 15)
-      ]),
-      child: FloatingActionButton.extended(
-          heroTag: 'fabIncome',
-          onPressed: () => Navigator.pushNamed(context, 'earnings'),
-          backgroundColor: CustomTheme.primaryColors.shade50,
-          foregroundColor: CustomTheme.primaryColors,
-          icon: const Icon(Ionicons.wallet),
-          elevation: 0,
-          label: Text(
-              (state.driver?.wallets.length ?? 0) > 0
-                  ? NumberFormat.simpleCurrency(
-                          name: state.driver!.wallets.first.currency)
-                      .format(state.driver!.wallets.first.balance)
-                  : "-",
-              style: Theme.of(context)
-                  .textTheme
-                  .headlineSmall
-                  ?.copyWith(color: CustomTheme.primaryColors))),
+    final fcmId = await FirebaseMessaging.instance.getToken();
+    if (fcmId == null) return;
+
+    await client.mutate(
+      Options$Mutation$UpdateDriverFCMId(
+        variables: Variables$Mutation$UpdateDriverFCMId(
+          id: Hive.box('user').get('driverId').toString(),
+          fcmId: fcmId,
+        ),
+      ),
     );
   }
 
@@ -562,32 +502,25 @@ class MyHomePage extends StatelessWidget with WidgetsBindingObserver {
     }
   }
 
-  void updateNotificationId(BuildContext context) async {
-    final httpLink = HttpLink(
-      "${serverUrl}graphql",
-    );
-    final authLink = AuthLink(
-      getToken: () async => 'Bearer ${Hive.box('user').get('jwt')}',
-    );
-
-    Link link = authLink.concat(httpLink);
-    final GraphQLClient client = GraphQLClient(
-      cache: GraphQLCache(),
-      link: link,
-    );
-    final fcmId = await getFcmId(context);
-
-    final driverId = Hive.box('user').get('driverId').toString();
-    final result = await client.mutate(
-      Options$Mutation$UpdateDriverFCMId(
-        variables: Variables$Mutation$UpdateDriverFCMId(
-          id: driverId,
-          fcmId: fcmId,
-        ),
-      ),
-    );
-
-    print('Response data: ${result.data}');
-    print('Response errors: ${result.exception}');
+  Future<bool> checkAndRequestLocationPermission(BuildContext context) async {
+  var status = await Permission.location.status;
+  if (status.isGranted) {
+    return true;
+  } else if (status.isDenied) {
+    status = await Permission.location.request();
+    if (status.isGranted) {
+      return true;
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Se necesita permiso de ubicación para continuar.')),
+      );
+      return false;
+    }
+  } else if (status.isPermanentlyDenied) {
+    openAppSettings();
+    return false;
   }
+  return false;
 }
+    }
+

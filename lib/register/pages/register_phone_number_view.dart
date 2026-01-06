@@ -74,15 +74,18 @@ class _RegisterPhoneNumberViewState extends State<RegisterPhoneNumberView> {
     ));
     print(  'GraphQL result: ' + result.toString());
     if (result.hasException) {
-      print('GraphQL error: ' + result.exception.toString());
+      final errorMsg = result.exception.toString();
+      print('GraphQL error: ' + errorMsg);
       widget.onLoadingStateUpdated(false);
-      final snackBar = SnackBar(
-        content: RidyBanner(
-          result.exception.toString(),
-          type: BannerType.error,
-        ),
-      );
-      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      if (!errorMsg.contains('Driver not found for phone')) {
+        final snackBar = SnackBar(
+          content: RidyBanner(
+            errorMsg,
+            type: BannerType.error,
+          ),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      }
       return null;
     }
     return result.data?['driverByPhone'];

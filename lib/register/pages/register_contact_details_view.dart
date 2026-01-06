@@ -49,6 +49,7 @@ class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView>
     firstName = widget.firstName;
     lastName = widget.lastName;
     certificateNumber = widget.certificateNumber;
+    //widget.onLoadingStateUpdated(false);
   }
 
   @override
@@ -197,6 +198,7 @@ class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView>
                               'certificateNumber': certificateNumber,
                               'gender': gender?.name,
                               'address': address,
+                              'status':'WaitingDocuments'
                             }
                           }
                         },
