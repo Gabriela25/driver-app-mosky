@@ -73,6 +73,7 @@ class _RegisterPhoneNumberViewState extends State<RegisterPhoneNumberView> {
       fetchPolicy: FetchPolicy.networkOnly,
     ));
     print(  'GraphQL result: ' + result.toString());
+    Hive.box('user').put('driverId', result.data?['driverByPhone']?['id']);
     if (result.hasException) {
       final errorMsg = result.exception.toString();
       print('GraphQL error: ' + errorMsg);

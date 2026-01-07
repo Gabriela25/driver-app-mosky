@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:sms_firebase/l10n/messages.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -13,6 +14,8 @@ class RegisterContactDetailsView extends StatefulWidget {
   final String? certificateNumber;
   final Enum$Gender? gender;
   final String? address;
+  final String email;
+  final String password;
   final Function() onContinue;
   final Function(bool loading) onLoadingStateUpdated;
 
@@ -23,19 +26,24 @@ class RegisterContactDetailsView extends StatefulWidget {
     required this.certificateNumber,
     required this.gender,
     required this.address,
+    required this.email,
+    required this.password,
     required this.onContinue,
     required this.onLoadingStateUpdated,
   });
 
   @override
-  State<RegisterContactDetailsView> createState() => _RegisterContactDetailsViewState();
+  State<RegisterContactDetailsView> createState() =>
+      _RegisterContactDetailsViewState();
 }
 
-class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView> {
+class _RegisterContactDetailsViewState
+    extends State<RegisterContactDetailsView> {
   final _formKey = GlobalKey<FormState>();
   Enum$Gender? gender;
   String? address;
-  String? email;
+  late String email;
+  late String password;
   String? firstName;
   String? lastName;
   String? certificateNumber;
@@ -45,7 +53,8 @@ class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView>
     super.initState();
     gender = widget.gender;
     address = widget.address;
-    email = "";
+    email = widget.email;
+    password = widget.password;
     firstName = widget.firstName;
     lastName = widget.lastName;
     certificateNumber = widget.certificateNumber;
@@ -91,7 +100,8 @@ class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView>
                     const SizedBox(height: 8),
                     TextFormField(
                       initialValue: certificateNumber,
-                      onChanged: (value) => setState(() => certificateNumber = value),
+                      onChanged: (value) =>
+                          setState(() => certificateNumber = value),
                       validator: (value) => value?.isEmpty ?? true
                           ? S.of(context).form_required_field_error
                           : null,
@@ -122,17 +132,14 @@ class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView>
                           }),
                     ),
                     const SizedBox(height: 8),
-                    
- 
-                    
                     TextFormField(
                       initialValue: address,
                       onChanged: (value) {
                         address = value;
                       },
                       validator: (value) => value?.isEmpty ?? true
-                        ? S.of(context).form_required_field_error
-                        : null,
+                          ? S.of(context).form_required_field_error
+                          : null,
                       decoration: InputDecoration(
                           isDense: true, labelText: S.of(context).address),
                     ),
@@ -148,85 +155,164 @@ class _RegisterContactDetailsViewState extends State<RegisterContactDetailsView>
               },
               onError: (error) => {
                 print('Error en la pagina de registro: $error'),
-                showOperationErrorMessage(context, error)},
+                showOperationErrorMessage(context, error)
+              },
             ),
             builder: (runMutation, result) {
               return SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-
-                  onPressed: () async {
-                    bool? isValid = _formKey.currentState?.validate();
-                    if (isValid != true) return;
-                    _formKey.currentState?.save();
-                    widget.onLoadingStateUpdated(true);
-
-                    // Obtener driverId de Hive
-                    String? driverId;
-                    try {
-                      final box = await Hive.openBox('user');
-                      driverId = box.get('driverId')?.toString();
-                    } catch (_) {
-                      driverId = null;
-                    }
-                    if (driverId == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('No se encontró el driverId.')),
-                      );
-                      widget.onLoadingStateUpdated(false);
-                      return;
-                    }
-
-                    // Ejecutar mutación manualmente
-                    final client = GraphQLProvider.of(context).value;
-                    const String mutation = '''
-                      mutation UpdateOneDriver(\$input: UpdateOneDriverInput!) {
-                        updateOneDriver(input: \$input) {
-                          id
+                    onPressed: () async {
+                      bool? isValid = _formKey.currentState?.validate();
+                      if (isValid != true) return;
+                      _formKey.currentState?.save();
+                      widget.onLoadingStateUpdated(true);
+                      final client = GraphQLProvider.of(context).value;
+                      final driverId = Hive.box('user').get('driverId');
+                      print('DEBUG: driverId obtenido de Hive: $driverId');
+                      if (driverId == null) {
+                        print('DEBUG: Iniciando flujo de registro nuevo...');
+                        final user = FirebaseAuth.instance.currentUser;
+                        print('DEBUG: Usuario de Firebase actual: $user');
+                        if (user != null) {
+                          final String? firebaseToken = await user.getIdToken();
+                          print(
+                              'DEBUG: Token de Firebase obtenido: $firebaseToken');
+                          if (firebaseToken == null) {
+                            widget.onLoadingStateUpdated(false);
+                            showOperationErrorMessage(
+                                context,
+                                'No se pudo obtener el token de Firebase.'
+                                    as OperationException?);
+                            return;
+                          }
+                          print(
+                              'DEBUG: Antes de ejecutar mutación de login...');
+                          final loginResult =
+                              await client.mutate(MutationOptions(
+                            document: gql('''
+                      mutation Login(\$firebaseToken: String!) {
+                        login(input: { firebaseToken: \$firebaseToken }) {
+                          jwtToken
                         }
                       }
-                    ''';
-                    try {
-                      final result = await client.mutate(MutationOptions(
-                        document: gql(mutation),
-                        variables: {
-                          'input': {
-                            'id': driverId,
-                            'update': {
-                              'firstName': firstName,
-                              'lastName': lastName,
-                              'certificateNumber': certificateNumber,
-                              'gender': gender?.name,
-                              'address': address,
-                              'status':'WaitingDocuments'
-                            }
-                          }
-                        },
-                      ));
-                      if (result.hasException) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Error al guardar: ${result.exception.toString()}')),
-                        );
-                        widget.onLoadingStateUpdated(false);
-                        return;
-                      }
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error al guardar: $e')),
-                      );
-                      widget.onLoadingStateUpdated(false);
-                      return;
-                    }
-                    widget.onLoadingStateUpdated(false);
-                    widget.onContinue();
-                  },
-                  child: Text(S.of(context).action_continue
+                    '''),
+                            variables: {'firebaseToken': firebaseToken},
+                          ));
+                          print('Resultado del login: ${loginResult}');
+                          final jwt = loginResult.data?['login']?['jwtToken'];
+                          if (jwt != null) {
+                            Hive.box('user').put('jwt', jwt);
+                            final getDriverIdQuery = '''
+                              query GetDriverId(\$jwtToken: String!) {
+                                getDriverId(jwtToken: \$jwtToken)
+                              }
+                            ''';
 
-            )),
+                            final getDriverIdResult =
+                                await client.query(QueryOptions(
+                              document: gql(getDriverIdQuery),
+                              variables: {'jwtToken': jwt},
+                              fetchPolicy: FetchPolicy.noCache,
+                            ));
+
+                            print(
+                                'Resultado de la consulta getDriverId: ${getDriverIdResult.data}');
+                            final driverId =
+                                getDriverIdResult.data?['getDriverId'];
+
+                            //  final driverId = meResult.data?['me']?['id'];
+                            if (driverId != null) {
+                              Hive.box('user').put('driverId', driverId);
+                              print('driverId guardado en Hive: $driverId');
+                            } else {
+                              print(
+                                  'No se pudo obtener el driverId de la consulta Me.');
+                            }
+                            // Ahora actualizar el perfil del driver
+                            final updateOneDriverMutation = '''
+                              mutation UpdateOneDriver(
+                                \$input: UpdateOneDriverInput!
+                              ) {
+                                updateOneDriver(input: \$input) {
+                                  id   
+                                  email
+                                password
+                                }
+                              }
+                            ''';
+
+                            final updateVariables = {
+                              'input': {
+                                'id': driverId,
+                                'update': {
+                                  'email': email,
+                                  'password': password,
+                                  'firstName': firstName,
+                                  'lastName': lastName,
+                                  'certificateNumber': certificateNumber,
+                                  'status': 'WaitingDocuments',
+                                }
+                              }
+                            };
+                            print('driverId usado para update: $driverId');
+                            print(
+                                'Variables enviadas a updateOneDriver: $updateVariables');
+
+                            final updateResult =
+                                await client.mutate(MutationOptions(
+                              document: gql(updateOneDriverMutation),
+                              variables: updateVariables,
+                            ));
+
+                            if (updateResult.data != null &&
+                                updateResult.data?['updateOneDriver'] != null) {
+                              // Guardar bandera de nuevo registro
+                              Hive.box('user').put('isNewRegistration', true);
+                              print(
+                                  'DEBUG: isNewRegistration guardado en Hive = true');
+                              widget.onLoadingStateUpdated(false);
+                              print(
+                                  'DEBUG: Llamando widget.onContinue() tras registro nuevo');
+                              widget.onContinue();
+                              print(
+                                  'DEBUG: widget.onContinue() llamado tras registro nuevo');
+                              return;
+                            } else {
+                              widget.onLoadingStateUpdated(false);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                    content: Text(
+                                        'No se pudo actualizar el perfil.')),
+                              );
+                              return;
+                            }
+                          } else {
+                            widget.onLoadingStateUpdated(false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                  content:
+                                      Text('No se recibió JWT del servidor.')),
+                            );
+                            return;
+                          }
+                        } else {
+                          widget.onLoadingStateUpdated(false);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    'No hay usuario de Firebase autenticado.')),
+                          );
+                          return;
+                        }
+                      }
+                      widget.onLoadingStateUpdated(false);
+                      widget.onContinue();
+                    },
+                    child: Text(S.of(context).action_continue)),
               );
             })
       ],
-
     );
   }
 }

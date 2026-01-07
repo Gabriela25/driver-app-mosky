@@ -33,6 +33,8 @@ class _RegisterViewState extends State<RegisterView> {
   String? verificationId;
   String? phoneNumber;
   bool isLoading = false;
+  String? _pendingEmail;
+  String? _pendingPassword;
 
   @override
   Widget build(BuildContext context) {
@@ -116,27 +118,12 @@ class _RegisterViewState extends State<RegisterView> {
                                   key: const ValueKey('register_email_password_view'),
                                   email: null,
                                   password: null,
-                                  onContinue: () async {
-                                    final box = Hive.box('user');
-                                    final isNewRegistration = box.get('isNewRegistration') == true;
-                                    print('DEBUG: isNewRegistration en RegisterView = '
-                                        '${box.get('isNewRegistration')} (bool: $isNewRegistration)');
-                                    if (isNewRegistration) {
-                                      // Limpiar bandera para no interferir en futuros flujos
-                                      await box.put('isNewRegistration', false);
-                                      print('DEBUG: Avanzando a página 3 por nuevo registro');
-                                      pageController!.jumpToPage(3);
-                                      return;
-                                    }
-                                    final jwt = box.get('jwt');
-                                    print('DEBUG: jwt en RegisterView = $jwt');
-                                    if (jwt != null && jwt.toString().isNotEmpty) {
-                                      print('DEBUG: Navegando a principal por JWT');
-                                      Navigator.of(context).pushReplacementNamed('/');
-                                    } else {
-                                      print('DEBUG: Avanzando a página 3 por fallback');
-                                      pageController!.jumpToPage(3);
-                                    }
+                                  onContinue: (String? email, String? password) async {
+                                    setState(() {
+                                      _pendingEmail = email;
+                                      _pendingPassword = password;
+                                    });
+                                    pageController!.jumpToPage(3);
                                   },
                                   onLoadingStateUpdated: (loading) {
                                     print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
@@ -145,20 +132,22 @@ class _RegisterViewState extends State<RegisterView> {
                                 );
                               case 3:
                                 return RegisterContactDetailsView(
-                                  key: const ValueKey('register_contact_details_view'),
-                                  firstName: null,
-                                  lastName: null,
-                                  certificateNumber: null,
-                                  gender: null,
-                                  address: null,
-                                  onContinue: () {
-                                    pageController!.jumpToPage(4);
-                                  },
-                                  onLoadingStateUpdated: (loading) {
-                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
-                                    setState(() => isLoading = loading);
-                                  },
-                                );
+                                key: const ValueKey('register_contact_details_view'),
+                                firstName: null,
+                                lastName: null,
+                                certificateNumber: null,
+                                gender: null,
+                                address: null,
+                                email: _pendingEmail ?? '',
+                                password: _pendingPassword ?? '',
+                                onContinue: () {
+                                  pageController!.jumpToPage(4);
+                                },
+                                onLoadingStateUpdated: (loading) {
+                                  print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
+                                  setState(() => isLoading = loading);
+                                },
+                              );
                               case 4:
                                 return RegisterRideDetailsView(
                                   key: const ValueKey('register_ride_details_view'),

@@ -190,9 +190,9 @@ class DrawerView extends StatelessWidget {
             );
             if (confirmed == true) {
               // Cerrar sesión Firebase y limpiar datos locales
-              try {
+              /*try {
                 await FirebaseAuth.instance.signOut();
-              } catch (e) {}
+              } catch (e) {}*/
               final userBox = Hive.box('user');
               await userBox.delete('jwt');
               await userBox.delete('driverId');
