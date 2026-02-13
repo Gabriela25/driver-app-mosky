@@ -169,11 +169,8 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage>
-    with WidgetsBindingObserver {
-
-  final GlobalKey<ScaffoldState> scaffoldKey =
-  GlobalKey<ScaffoldState>();
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
 
   Refetch? refetch;
 
@@ -276,8 +273,8 @@ class _MyHomePageState extends State<MyHomePage>
 
                     return BlocConsumer<MainBloc, MainState>(
                       listenWhen: (previous, next) {
-                        if (previous is StatusOnline &&
-                            next is StatusOnline) return false;
+                        if (previous is StatusOnline && next is StatusOnline)
+                          return false;
                         return true;
                       },
                       listener: (context, state) {
@@ -313,26 +310,22 @@ class _MyHomePageState extends State<MyHomePage>
                               ),
                             ),
                             if (state is StatusOffline ||
-                                (state is StatusOnline &&
-                                    state.orders.isEmpty))
+                                (state is StatusOnline && state.orders.isEmpty))
                               Positioned(
                                 bottom: 0,
                                 left: 0,
                                 right: 0,
                                 child: NoticeBar(
                                   title: state is StatusOffline
-                                      ? S.of(context)
-                                      .status_offline_description
-                                      : S.of(context)
-                                      .status_online_description,
+                                      ? S.of(context).status_offline_description
+                                      : S.of(context).status_online_description,
                                 ),
                               ),
                             if (state is StatusOnline)
                               Positioned(
                                 bottom: 0,
                                 child: SizedBox(
-                                  width:
-                                  MediaQuery.of(context).size.width,
+                                  width: MediaQuery.of(context).size.width,
                                   height: 320,
                                   child: OrdersCarouselView(),
                                 ),
@@ -374,7 +367,7 @@ class _MyHomePageState extends State<MyHomePage>
     );
   }
 
-  Widget _getOnlineOfflineButton (BuildContext context, MainState state) {
+  Widget _getOnlineOfflineButton(BuildContext context, MainState state) {
     final mainBloc = context.read<MainBloc>();
 
     return Mutation$UpdateDriverStatus$Widget(
@@ -439,13 +432,12 @@ class _MyHomePageState extends State<MyHomePage>
       );
     });
   }
-   
+
   Future<void> updateNotificationId(BuildContext context) async {
     final client = GraphQLClient(
       cache: GraphQLCache(),
       link: AuthLink(
-        getToken: () async =>
-        'Bearer ${Hive.box('user').get('jwt')}',
+        getToken: () async => 'Bearer ${Hive.box('user').get('jwt')}',
       ).concat(HttpLink("${serverUrl}graphql")),
     );
 
@@ -503,24 +495,25 @@ class _MyHomePageState extends State<MyHomePage>
   }
 
   Future<bool> checkAndRequestLocationPermission(BuildContext context) async {
-  var status = await Permission.location.status;
-  if (status.isGranted) {
-    return true;
-  } else if (status.isDenied) {
-    status = await Permission.location.request();
+    var status = await Permission.location.status;
     if (status.isGranted) {
       return true;
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Se necesita permiso de ubicación para continuar.')),
-      );
+    } else if (status.isDenied) {
+      status = await Permission.location.request();
+      if (status.isGranted) {
+        return true;
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Se necesita permiso de ubicación para continuar.')),
+        );
+        return false;
+      }
+    } else if (status.isPermanentlyDenied) {
+      openAppSettings();
       return false;
     }
-  } else if (status.isPermanentlyDenied) {
-    openAppSettings();
     return false;
   }
-  return false;
 }
-    }
-

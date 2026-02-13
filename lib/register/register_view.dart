@@ -35,6 +35,11 @@ class _RegisterViewState extends State<RegisterView> {
   bool isLoading = false;
   String? _pendingEmail;
   String? _pendingPassword;
+  String? _pendingFirstName;
+  String? _pendingLastName;
+  String? _pendingCertificateNumber;
+  Enum$Gender? _pendingGender;
+  String? _pendingAddress;
 
   @override
   Widget build(BuildContext context) {
@@ -118,36 +123,41 @@ class _RegisterViewState extends State<RegisterView> {
                                   key: const ValueKey('register_email_password_view'),
                                   email: null,
                                   password: null,
-                                  onContinue: (String? email, String? password) async {
+                                  onContinue: (Map<String, dynamic> driverData) async {
                                     setState(() {
-                                      _pendingEmail = email;
-                                      _pendingPassword = password;
+                                      _pendingFirstName = driverData['firstName'] ?? '';
+                                      _pendingLastName = driverData['lastName'] ?? '';
+                                      _pendingCertificateNumber = driverData['certificateNumber'] ?? '';
+                                      _pendingGender = driverData['gender'];
+                                      _pendingAddress = driverData['address'] ?? '';
+                                      _pendingEmail = driverData['email'] ?? '';
+                                      _pendingPassword = driverData['password'] ?? '';
                                     });
                                     pageController!.jumpToPage(3);
                                   },
                                   onLoadingStateUpdated: (loading) {
-                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
+                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=ÿ$loading');
                                     setState(() => isLoading = loading);
                                   },
                                 );
                               case 3:
                                 return RegisterContactDetailsView(
-                                key: const ValueKey('register_contact_details_view'),
-                                firstName: null,
-                                lastName: null,
-                                certificateNumber: null,
-                                gender: null,
-                                address: null,
-                                email: _pendingEmail ?? '',
-                                password: _pendingPassword ?? '',
-                                onContinue: () {
-                                  pageController!.jumpToPage(4);
-                                },
-                                onLoadingStateUpdated: (loading) {
-                                  print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=$loading');
-                                  setState(() => isLoading = loading);
-                                },
-                              );
+                                  key: const ValueKey('register_contact_details_view'),
+                                  firstName: _pendingFirstName ?? '',
+                                  lastName: _pendingLastName ?? '',
+                                  certificateNumber: _pendingCertificateNumber ?? '',
+                                  gender: _pendingGender,
+                                  address: _pendingAddress ?? '',
+                                  email: _pendingEmail ?? '',
+                                  password: _pendingPassword ?? '',
+                                  onContinue: () {
+                                    pageController!.jumpToPage(4);
+                                  },
+                                  onLoadingStateUpdated: (loading) {
+                                    print('DEBUG: onLoadingStateUpdated llamado en RegisterView, loading=ÿ$loading');
+                                    setState(() => isLoading = loading);
+                                  },
+                                );
                               case 4:
                                 return RegisterRideDetailsView(
                                   key: const ValueKey('register_ride_details_view'),

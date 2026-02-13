@@ -211,7 +211,7 @@ class _RegisterPhoneNumberViewState extends State<RegisterPhoneNumberView> {
                             dialCode + phoneNumber!;
                         widget.onLoadingStateUpdated(true);
                         final driver = await checkPhoneApproved(fullPhoneNumber);
-                        if (driver != null && driver['status'] == 'Offline') {
+                        if (driver != null && (driver['status'] == 'Offline' || driver['status'] == 'PendingApproval')) {
                           // Si el número está registrado, solo login
                           widget.onLoadingStateUpdated(false);
                           widget.onLoggedIn();

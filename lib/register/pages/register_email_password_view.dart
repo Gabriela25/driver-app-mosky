@@ -5,11 +5,14 @@ import 'package:hive/hive.dart';
 import 'package:sms_firebase/l10n/messages.dart';
 import 'package:sms_firebase/query_result_view.dart';
 import 'package:sms_firebase/register/pages/register_contact_details_view.dart';
+import 'package:sms_firebase/register/pending_approval_screen.dart';
+
+import '../../schema.gql.dart';
 
 class RegisterEmailPasswordView extends StatefulWidget {
   final String? email;
   final String? password;
-    final Future<void> Function(String? email, String? password) onContinue;
+    final Future<void> Function(Map<String, dynamic> driverData) onContinue;
   final Function(bool loading) onLoadingStateUpdated;
   const RegisterEmailPasswordView(
       {super.key,
@@ -102,13 +105,77 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
                   widget.onLoadingStateUpdated(false);
                   Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
                   return;
-                } else if (loginData != null && loginData['jwtToken'] != null) {
+                } else if (loginData != null && loginData['jwtToken'] != null && loginData['status'] == 'WaitingDocuments') {
                   widget.onLoadingStateUpdated(false);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  print('DEBUG: loginData recibida: $loginData');
+                  
+                    // Realizar consulta de datos del driver aquí
+                    final client = GraphQLProvider.of(context).value;
+                    final driverQuery = '''
+                      query Me(\$versionCode: Int!, \$id: ID!) {
+                        Me(versionCode: \$versionCode, id: \$id) {
+                          driver {
+                            id
+                            firstName
+                            lastName
+                            certificateNumber
+                            gender
+                            address
+                            email
+                          }
+                        }
+                      }
+                    ''';
+                    final driverResult = await client.query(QueryOptions(
+                      document: gql(driverQuery),
+                      variables: {
+                        'versionCode': 10000000, // Usa el valor adecuado para tu app
+                        'id': driverId,
+                      },
+                      fetchPolicy: FetchPolicy.noCache,
+                    ));
+                    print('DEBUG: driverResult recibida: ${driverResult}');
+                    final driverData = driverResult.data?['Me']?['driver'];
+                    print('DEBUG: driverData extraída: $driverData');
+                    if (driverData != null) {
+                      Enum$Gender? genderEnum;
+                      try {
+                        genderEnum = driverData['gender'] != null ? fromJson$Enum$Gender(driverData['gender']) : null;
+                      } catch (_) {
+                        genderEnum = null;
+                      }
+                      await widget.onContinue({
+                        'firstName': driverData['firstName'] ?? '',
+                        'lastName': driverData['lastName'] ?? '',
+                        'certificateNumber': driverData['certificateNumber'] ?? '',
+                        'gender': genderEnum ?? Enum$Gender.Male,
+                        'address': driverData['address'] ?? '',
+                        'email': driverData['email'] ?? '',
+                        'password': password ?? ''
+                      });
+                      return;
+                    }
+                  
+                  /*ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('El usuario no está en estado Offline.')),
+                  );*/
+                  return;
+
+                } 
+                 if (loginData != null &&
+                    loginData['jwtToken'] != null &&
+                    loginData['status'] == 'PendingApproval') {
+                      print('DEBUG: Usuario en estado PendingApproval, redirigiendo a pantalla de espera');
+                  widget.onLoadingStateUpdated(false);
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (context) => PendingApprovalScreen(),
+                    ),
                   );
                   return;
-                } else if (loginResult.hasException) {
+                }
+                
+                else if (loginResult.hasException) {
                   widget.onLoadingStateUpdated(false);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('Credenciales incorrectas.')),
@@ -117,7 +184,15 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
                 }
                 widget.onLoadingStateUpdated(false);
               } else {
-                await widget.onContinue(email, password);
+                await widget.onContinue({
+                  'firstName': '',
+                  'lastName': '',
+                  'certificateNumber': '',
+                  'gender': null,
+                  'address': '',
+                  'email': email ?? '',
+                  'password': password ?? ''
+                });
               }
             },
             child: Text(S.of(context).action_continue),
