@@ -17,8 +17,8 @@ class RegisterRideDetailsView extends StatefulWidget {
 
 class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
   late final GlobalKey<FormState> _formKey;
-  String? carPlate;
-  int? carProductionYear;
+  late final TextEditingController carPlateController;
+  late final TextEditingController carProductionYearController;
   String? carId;
   String? carColorId;
 
@@ -26,6 +26,15 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
   void initState() {
     super.initState();
     _formKey = GlobalKey<FormState>();
+    carPlateController = TextEditingController();
+    carProductionYearController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    carPlateController.dispose();
+    carProductionYearController.dispose();
+    super.dispose();
   }
 
   Future<Map<String, List<Map<String, String>>>> fetchModelsAndColors(GraphQLClient client) async {
@@ -88,8 +97,7 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                         children: [
                           Flexible(
                             child: TextFormField(
-                              initialValue: carPlate,
-                              onSaved: (value) => carPlate = value,
+                              controller: carPlateController,
                               validator: (value) => value?.isEmpty ?? true
                                   ? S.of(context).form_required_field_error
                                   : null,
@@ -101,11 +109,11 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                           const SizedBox(width: 8),
                           Flexible(
                             child: TextFormField(
+                              controller: carProductionYearController,
                               keyboardType: TextInputType.number,
-                              initialValue: carProductionYear?.toString() ?? "",
-                              onSaved: (value) {
-                                carProductionYear = value == null ? null : int.tryParse(value);
-                              },
+                              validator: (value) => value?.isEmpty ?? true
+                                  ? S.of(context).form_required_field_error
+                                  : null,
                               inputFormatters: <TextInputFormatter>[
                                 FilteringTextInputFormatter.digitsOnly
                               ],
@@ -161,8 +169,8 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                     } catch (_) {
                       driverId = null;
                     }
-                    print('DEBUG: driverId=$driverId, carId=$carId, carColorId=$carColorId, carPlate=$carPlate, carProductionYear=$carProductionYear');
-                    if (driverId == null || carId == null || carColorId == null || carPlate == null || carProductionYear == null) {
+                    print('DEBUG: driverId=$driverId, carId=$carId, carColorId=$carColorId, carPlate=${carPlateController.text}, carProductionYear=${carProductionYearController.text}');
+                    if (driverId == null || carId == null || carColorId == null || carPlateController.text.isEmpty || carProductionYearController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Faltan datos requeridos para guardar.')),
                       );
@@ -187,8 +195,8 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                             'update': {
                               'carId': carId,
                               'carColorId': carColorId,
-                              'carPlate': carPlate,
-                              'carProductionYear': carProductionYear,
+                              'carPlate': carPlateController.text,
+                              'carProductionYear': int.tryParse(carProductionYearController.text),
                             }
                           },
                         },

@@ -97,7 +97,12 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
                   variables: {'email': email, 'password': password},
                   fetchPolicy: FetchPolicy.noCache,
                 ));
+                if (loginResult.hasException) {
+                  print('ERROR GraphQL:');
+                  print(loginResult.exception.toString());
+                }
                 final loginData = loginResult.data?['loginByEmailPassword'];
+                print('DEBUG: loginData recibida: $loginData');
                 if (loginData != null &&
                     loginData['jwtToken'] != null &&
                     loginData['status'] == 'Offline') {
@@ -178,7 +183,14 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
                 else if (loginResult.hasException) {
                   widget.onLoadingStateUpdated(false);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Credenciales incorrectas.')),
+                    SnackBar(
+                      content: Text(
+                        'Credenciales incorrectas.',
+                        style: TextStyle(color: const Color.fromARGB(255, 231, 36, 36)),
+                      ),
+                      backgroundColor: const Color.fromARGB(255, 233, 188, 185),
+                      behavior: SnackBarBehavior.floating,
+                    ),
                   );
                   return;
                 }

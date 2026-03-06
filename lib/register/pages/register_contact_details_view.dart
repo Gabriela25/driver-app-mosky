@@ -252,6 +252,7 @@ class _RegisterContactDetailsViewState
                                   'lastName': lastName,
                                   'certificateNumber': certificateNumber,
                                   'status': 'WaitingDocuments',
+                                  'address': address,
                                 }
                               }
                             };

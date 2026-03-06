@@ -52,7 +52,7 @@ class QueryResultView extends StatelessWidget {
         );
       }
       // Imprime el error en consola y muestra una pantalla vacía
-      print('GraphQL Exception: ${queryResult.exception}');
+      print('GraphQL Exception gabi: ${queryResult.exception}');
       return const SizedBox.shrink();
     }
     return Container();

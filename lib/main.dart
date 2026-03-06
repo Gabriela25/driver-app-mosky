@@ -133,7 +133,7 @@ class MyAppRoot extends StatelessWidget {
                     Hive.box('settings').listenable(keys: ['language']),
                 builder: (context, box, snapshot) {
                   return MaterialApp(
-                      title: 'Ride Amigo Conductor',
+                      title: 'Mosky Rider', 
                       navigatorObservers: [defaultLifecycleObserver],
                       debugShowCheckedModeBanner: false,
                       localizationsDelegates: S.localizationsDelegates,
