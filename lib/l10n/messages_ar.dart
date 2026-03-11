@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Arabic (`ar`).
 class SAr extends S {
   SAr([String locale = 'ar']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'كلمات المرور غير متطابقة';
   @override
   String get statusOffline => 'بحث عن رحلات';
 

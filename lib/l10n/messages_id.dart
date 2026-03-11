@@ -5,9 +5,10 @@ import 'messages.dart';
 /// The translations for Indonesian (`id`).
 class SId extends S {
   SId([String locale = 'id']) : super(locale);
-
   @override
-  String get statusOffline => 'Online';
+  String get form_password_mismatch_error => 'Kata sandi tidak cocok';
+  @override
+  String get statusOffline => 'Offline';
 
   @override
   String get statusOnline => 'Buka Offline';

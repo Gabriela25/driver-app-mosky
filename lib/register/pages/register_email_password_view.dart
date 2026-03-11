@@ -30,6 +30,7 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
   final _formKey = GlobalKey<FormState>();
   late String? email;
   late String? password;
+  late String? confirmPassword;
 
   @override
   void initState() {
@@ -40,6 +41,8 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
 
   @override
   Widget build(BuildContext context) {
+    final driverId = Hive.box('user').get('driverId');
+    print('DEBUG: driverId en RegisterEmailPasswordView: $driverId');
     return Column(
       children: [
         Expanded(
@@ -52,8 +55,9 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
                     TextFormField(
                       initialValue: email,
                       onChanged: (value) => setState(() => email = value),
-                      validator: (value) =>
-                          value?.isEmpty ?? true ? null : null,
+                      validator: (value) => value?.isEmpty ?? true
+                          ? S.of(context).form_required_field_error
+                          : null,
                       decoration: InputDecoration(
                           isDense: true, labelText: S.of(context).email),
                     ),
@@ -66,7 +70,20 @@ class _RegisterEmailPasswordViewState extends State<RegisterEmailPasswordView> {
                           : null,
                       decoration: InputDecoration(
                           isDense: true, labelText: ('password')),
+                      obscureText: true, // Added to mask the password input
                     ),
+                    const SizedBox(height: 8),
+                    if (driverId == null)
+                      
+                      TextFormField(
+                        onChanged: (value) => setState(() => confirmPassword = value),
+                        validator: (value) => value != password
+                            ? S.of(context).form_password_mismatch_error
+                            : null,
+                        decoration: InputDecoration(
+                            isDense: true, labelText: ('Confirm Password')),
+                        obscureText: true, // Mask the input
+                      ),
                   ]),
             ),
           ),

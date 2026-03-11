@@ -21,6 +21,7 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
   late final TextEditingController carProductionYearController;
   String? carId;
   String? carColorId;
+  String? carBrandId;
 
   @override
   void initState() {
@@ -37,10 +38,13 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
     super.dispose();
   }
 
-  Future<Map<String, List<Map<String, String>>>> fetchModelsAndColors(GraphQLClient client) async {
+  
+
+  Future<Map<String, List<Map<String, String>>>> fetchBrandsAndModels(GraphQLClient client) async {
     const String query = '''
-      query GetCarModelsAndColors {
-        carModels { id name }
+      query GetCarBrandsAndModels {
+        carBrands { id name }
+        carModels { id name brand { id } }
         carColors { id name }
       }
     ''';
@@ -48,28 +52,36 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
     if (result.hasException) {
       throw Exception(result.exception.toString());
     }
+    final brands = (result.data?['carBrands'] as List<dynamic>?)
+        ?.map((e) => {
+              'id': e['id'].toString(),
+              'name': e['name'].toString(),
+            })
+        .toList() ?? <Map<String, String>>[];
+
     final models = (result.data?['carModels'] as List<dynamic>?)
         ?.map((e) => {
               'id': e['id'].toString(),
               'name': e['name'].toString(),
+              'brandId': e['brand']['id'].toString(),
             })
         .toList() ?? <Map<String, String>>[];
-
     final colors = (result.data?['carColors'] as List<dynamic>?)
         ?.map((e) => {
               'id': e['id'].toString(),
               'name': e['name'].toString(),
+             
             })
         .toList() ?? <Map<String, String>>[];
 
-    return {'models': models, 'colors': colors};
+    return {'brands': brands, 'models': models, 'colors': colors};
   }
 
   @override
   Widget build(BuildContext context) {
     final client = GraphQLProvider.of(context).value;
     return FutureBuilder<Map<String, List<Map<String, String>>>>(
-      future: fetchModelsAndColors(client),
+      future: fetchBrandsAndModels(client),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -77,8 +89,11 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
         if (snapshot.hasError) {
           return Center(child: Text('Error: ${snapshot.error}'));
         }
+        final brands = snapshot.data?['brands'] ?? [];
         final models = snapshot.data?['models'] ?? [];
         final colors = snapshot.data?['colors'] ?? [];
+        final filteredModels = models.where((model) => model['brandId'] == carBrandId).toList();
+
         return Form(
           key: _formKey,
           child: Column(
@@ -88,11 +103,6 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        S.of(context).register_ride_details_title,
-                        style: Theme.of(context).textTheme.titleLarge,
-                      ),
-                      const SizedBox(height: 24),
                       Row(
                         children: [
                           Flexible(
@@ -124,12 +134,23 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                           )
                         ],
                       ),
+                        const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: carBrandId,
+                        decoration: InputDecoration(
+                            isDense: false, labelText: S.of(context).car_model),
+                        items: brands
+                            .map((e) => DropdownMenuItem(
+                                value: e['id'], child: Text(e['name'] ?? '')))
+                            .toList(),
+                        onChanged: (String? id) => setState(() => carBrandId = id),
+                      ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(
                         value: carId,
                         decoration: InputDecoration(
-                            isDense: true, labelText: S.of(context).car_model),
-                        items: models
+                            isDense: false, labelText: S.of(context).car_model),
+                        items: filteredModels
                             .map((e) => DropdownMenuItem(
                                 value: e['id'], child: Text(e['name'] ?? '')))
                             .toList(),
@@ -139,7 +160,8 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                       DropdownButtonFormField<String>(
                         value: carColorId,
                         decoration: InputDecoration(
-                            isDense: true, labelText: S.of(context).car_color),
+                            isDense: false, // Ajustado para hacer el campo más alto
+                            labelText: S.of(context).car_color),
                         items: colors
                             .map((e) => DropdownMenuItem(
                                 value: e['id'], child: Text(e['name'] ?? '')))
@@ -194,6 +216,7 @@ class _RegisterRideDetailsViewState extends State<RegisterRideDetailsView> {
                             'id': driverId,
                             'update': {
                               'carId': carId,
+                              'carBrandId': carBrandId, 
                               'carColorId': carColorId,
                               'carPlate': carPlateController.text,
                               'carProductionYear': int.tryParse(carProductionYearController.text),

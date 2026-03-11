@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Portuguese (`pt`).
 class SPt extends S {
   SPt([String locale = 'pt']) : super(locale);
-
+  @override
+  String get form_password_mismatch_error => 'As senhas não coincidem';
   @override
   String get statusOffline => 'Fique online';
 

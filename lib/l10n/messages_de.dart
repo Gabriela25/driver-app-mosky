@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for German (`de`).
 class SDe extends S {
   SDe([String locale = 'de']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'Die Passwörter stimmen nicht überein';
   @override
   String get statusOffline => 'Online gehen';
 

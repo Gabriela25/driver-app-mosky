@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for English (`en`).
 class SEn extends S {
   SEn([String locale = 'en']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'Passwords do not match';
   @override
   String get statusOffline => 'Go Online';
 

@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Japanese (`ja`).
 class SJa extends S {
   SJa([String locale = 'ja']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'パスワードが一致しません';
   @override
   String get statusOffline => 'オンライン化する';
 

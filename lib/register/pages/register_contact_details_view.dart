@@ -109,6 +109,7 @@ class _RegisterContactDetailsViewState
                           isDense: true,
                           labelText: S.of(context).certificate_number),
                     ),
+                    const SizedBox(height: 8),
                     Container(
                       constraints: const BoxConstraints(maxWidth: 200),
                       child: DropdownButtonFormField<Enum$Gender>(

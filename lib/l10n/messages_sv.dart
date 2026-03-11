@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Swedish (`sv`).
 class SSv extends S {
   SSv([String locale = 'sv']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'Lösenorden matchar inte';
   @override
   String get statusOffline => 'Gå Online';
 

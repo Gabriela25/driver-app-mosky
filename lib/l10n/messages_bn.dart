@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Bengali Bangla (`bn`).
 class SBn extends S {
   SBn([String locale = 'bn']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'পাসওয়ার্ড মিলছে না';
   @override
   String get statusOffline => 'অনলাইন যান';
 

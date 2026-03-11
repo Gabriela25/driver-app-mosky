@@ -274,6 +274,12 @@ class _RegisterUploadDocumentsViewState
                             Navigator.popUntil(context, (route) {
                               return count++ == 2;
                             });
+                            Hive.box('user').delete('driverId');
+                            Hive.box('user').delete('jwt');
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/',
+                              (Route<dynamic> route) => false,
+                            ); // Navigate to the register page
                           },
                           child: Text(S.of(context).action_ok),
                         )
@@ -336,6 +342,12 @@ class _RegisterUploadDocumentsViewState
                                 Navigator.popUntil(context, (route) {
                                   return count++ == 2;
                                 });
+                                Hive.box('user').delete('driverId');
+                                Hive.box('user').delete('jwt');
+                                Navigator.of(context).pushNamedAndRemoveUntil(
+                                  '/',
+                                  (Route<dynamic> route) => false,
+                                ); // Navigate to the login page
                               },
                               child: Text(S.of(context).action_ok),
                             )
@@ -358,9 +370,7 @@ class _RegisterUploadDocumentsViewState
 
   Future<Fragment$DriverMedia> uploadFile(
       String path, UploadMedia media) async {
-    print('entre en el metodo');
-    print(path);
-    print(media);
+    
     var postUri = Uri.parse(
         "$serverUrl${media == UploadMedia.profile ? "api/panel/upload_profile" : "api/panel/upload_document"}");
     print(postUri);
@@ -369,14 +379,13 @@ class _RegisterUploadDocumentsViewState
     'Bearer ${Hive.box('user').get('jwt').toString()}';
     request.files.add(await http.MultipartFile.fromPath('file', path));
     // Agrega el driverId al form-data
-    print('AGREGANDO DRIVER ID AL FORM DATA ${Hive.box('user').get('driverId').toString()}');
+   
    
     request.fields['driverId'] = Hive.box('user').get('driverId').toString();
     final streamedResponse = await request.send();
     var response = await http.Response.fromStream(streamedResponse);
     var json = jsonDecode(response.body);
-    print('ESPERANDO LA IMAGEN');
-    print(json);
+    ;
     widget.onUploaded();
     return Fragment$DriverMedia.fromJson(json);
   }

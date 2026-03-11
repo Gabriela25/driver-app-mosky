@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Hindi (`hi`).
 class SHi extends S {
   SHi([String locale = 'hi']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'पासवर्ड मेल नहीं खाते';
   @override
   String get statusOffline => 'ऑनलाइन जाओ';
 

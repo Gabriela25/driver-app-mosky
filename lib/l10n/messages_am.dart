@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Amharic (`am`).
 class SAm extends S {
   SAm([String locale = 'am']) : super(locale);
-
+  @override
+  String get form_password_mismatch_error => 'የይለፍ ቃሎች አይዛመዱም';
   @override
   String get statusOffline => 'ኦንላይን ይግቡ';
 

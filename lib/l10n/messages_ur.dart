@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Urdu (`ur`).
 class SUr extends S {
   SUr([String locale = 'ur']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'پاس ورڈ میل نہیں کھاتے';
   @override
   String get statusOffline => 'آن لائن جاؤ';
 

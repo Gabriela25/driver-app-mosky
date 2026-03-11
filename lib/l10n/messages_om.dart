@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Oromo (`om`).
 class SOm extends S {
   SOm([String locale = 'om']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'Jecha darbii wal hin simne';
   @override
   String get statusOffline => 'Bani/Online';
 

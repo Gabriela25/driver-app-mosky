@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Persian (`fa`).
 class SFa extends S {
   SFa([String locale = 'fa']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'رمزهای عبور مطابقت ندارند';
   @override
   String get statusOffline => 'آفلاین';
 

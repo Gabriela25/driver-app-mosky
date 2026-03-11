@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Chinese (`zh`).
 class SZh extends S {
   SZh([String locale = 'zh']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => '密码不匹配';
   @override
   String get statusOffline => '上网';
 

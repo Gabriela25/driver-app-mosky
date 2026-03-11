@@ -346,11 +346,13 @@ class SEs extends S {
   String get onboarding_welcome => 'Bienvenidos !';
 
   @override
-  String get action_login_signup => 'Iniciar sesión Registrarse';
+  String get action_login_signup => 'Iniciar sesión/Registrarse';
 
   @override
   String get action_complete_registration => 'Registro completo';
-
+  
+  @override
+  String get form_password_mismatch_error => 'Las contraseñas no coinciden';
   @override
   String get action_edit_submission => 'Editar envío';
 
@@ -366,6 +368,7 @@ class SEs extends S {
   @override
   String get soft_rejection_description => 'Hay un problema con el envío.';
 
+ 
   @override
   String get action_confirm_and_continue => 'Confirmar y continuar';
 
@@ -443,7 +446,7 @@ class SEs extends S {
   String get register_payout_details_title => 'Ingrese los detalles de su pago';
 
   @override
-  String get register_ride_details_title => 'Ingrese los detalles de su viaje';
+  String get register_ride_details_title => 'Ingrese los detalles de su vehículo';
 
   @override
   String get register_profile_photo_title => 'Subir foto de perfil';

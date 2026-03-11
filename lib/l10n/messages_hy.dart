@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Armenian (`hy`).
 class SHy extends S {
   SHy([String locale = 'hy']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'Գաղտնաբառերը չեն համընկնում';
   @override
   String get statusOffline => 'Գնալ առցանց';
 

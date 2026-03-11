@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for French (`fr`).
 class SFr extends S {
   SFr([String locale = 'fr']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => 'Les mots de passe ne correspondent pas';
   @override
   String get statusOffline => 'Aller en ligne';
 

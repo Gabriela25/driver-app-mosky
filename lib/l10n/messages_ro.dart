@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Romanian Moldavian Moldovan (`ro`).
 class SRo extends S {
   SRo([String locale = 'ro']) : super(locale);
-
+  @override
+  String get form_password_mismatch_error => 'Parolele nu se potrivesc';
   @override
   String get statusOffline => 'Mergi Online';
 

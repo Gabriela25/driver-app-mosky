@@ -5,7 +5,8 @@ import 'messages.dart';
 /// The translations for Korean (`ko`).
 class SKo extends S {
   SKo([String locale = 'ko']) : super(locale);
-
+   @override
+  String get form_password_mismatch_error => '비밀번호가 일치하지 않습니다';
   @override
   String get statusOffline => '온라인으로';
 

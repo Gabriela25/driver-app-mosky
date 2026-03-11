@@ -199,6 +199,11 @@ abstract class S {
   /// **'Error desconocido'**
   String get message_unknown_error;
 
+  /// No description provided for @form_password_mismatch_error.
+  ///
+  /// In es, this message translates to:
+  /// **'Las contraseñas no coinciden'**
+  String get form_password_mismatch_error;
   /// No description provided for @title_success.
   ///
   /// In es, this message translates to:
