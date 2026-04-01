@@ -259,6 +259,17 @@ void onLocationUpdated(
       variables: Variables$Mutation$UpdateDriverLocation(
           point: Input$PointInput(
               lat: position.latitude, lng: position.longitude))));
+  debugPrint('updateDriversLocationNew response: ${res.data}');
+  if (res.hasException) {
+    debugPrint('updateDriversLocationNew exception: ${res.exception}');
+    debugPrint(
+        'updateDriversLocationNew graphqlErrors: ${res.exception?.graphqlErrors.map((e) => e.message).join(' | ')}');
+    debugPrint(
+        'updateDriversLocationNew linkException: ${res.exception?.linkException}');
+  }
+  if (res.parsedData == null) {
+    return;
+  }
   final List<Fragment$AvailableOrder> availableOrders = res
       .parsedData!.updateDriversLocationNew
       .map((e) => Fragment$AvailableOrder.fromJson(e.toJson()))

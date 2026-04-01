@@ -9130,10 +9130,12 @@ class Mutation$UpdateOrderStatus$Widget
 
 class Variables$Mutation$UpdateDriverStatus {
   factory Variables$Mutation$UpdateDriverStatus({
+    required String id,
     required Enum$DriverStatus status,
     String? fcmId,
   }) =>
       Variables$Mutation$UpdateDriverStatus._({
+        r'id': id,
         r'status': status,
         if (fcmId != null) r'fcmId': fcmId,
       });
@@ -9143,6 +9145,8 @@ class Variables$Mutation$UpdateDriverStatus {
   factory Variables$Mutation$UpdateDriverStatus.fromJson(
       Map<String, dynamic> data) {
     final result$data = <String, dynamic>{};
+    final l$id = data['id'];
+    result$data['id'] = (l$id as String);
     final l$status = data['status'];
     result$data['status'] = fromJson$Enum$DriverStatus((l$status as String));
     if (data.containsKey('fcmId')) {
@@ -9154,10 +9158,13 @@ class Variables$Mutation$UpdateDriverStatus {
 
   Map<String, dynamic> _$data;
 
+  String get id => (_$data['id'] as String);
   Enum$DriverStatus get status => (_$data['status'] as Enum$DriverStatus);
   String? get fcmId => (_$data['fcmId'] as String?);
   Map<String, dynamic> toJson() {
     final result$data = <String, dynamic>{};
+    final l$id = id;
+    result$data['id'] = l$id;
     final l$status = status;
     result$data['status'] = toJson$Enum$DriverStatus(l$status);
     if (_$data.containsKey('fcmId')) {
@@ -9182,6 +9189,11 @@ class Variables$Mutation$UpdateDriverStatus {
         runtimeType != other.runtimeType) {
       return false;
     }
+    final l$id = id;
+    final lOther$id = other.id;
+    if (l$id != lOther$id) {
+      return false;
+    }
     final l$status = status;
     final lOther$status = other.status;
     if (l$status != lOther$status) {
@@ -9200,9 +9212,11 @@ class Variables$Mutation$UpdateDriverStatus {
 
   @override
   int get hashCode {
+    final l$id = id;
     final l$status = status;
     final l$fcmId = fcmId;
     return Object.hashAll([
+      l$id,
       l$status,
       _$data.containsKey('fcmId') ? l$fcmId : const {},
     ]);
@@ -9219,6 +9233,7 @@ abstract class CopyWith$Variables$Mutation$UpdateDriverStatus<TRes> {
       _CopyWithStubImpl$Variables$Mutation$UpdateDriverStatus;
 
   TRes call({
+    String? id,
     Enum$DriverStatus? status,
     String? fcmId,
   });
@@ -9238,11 +9253,13 @@ class _CopyWithImpl$Variables$Mutation$UpdateDriverStatus<TRes>
   static const _undefined = <dynamic, dynamic>{};
 
   TRes call({
+    Object? id = _undefined,
     Object? status = _undefined,
     Object? fcmId = _undefined,
   }) =>
       _then(Variables$Mutation$UpdateDriverStatus._({
         ..._instance._$data,
+        if (id != _undefined && id != null) 'id': (id as String),
         if (status != _undefined && status != null)
           'status': (status as Enum$DriverStatus),
         if (fcmId != _undefined) 'fcmId': (fcmId as String?),
@@ -9256,6 +9273,7 @@ class _CopyWithStubImpl$Variables$Mutation$UpdateDriverStatus<TRes>
   TRes _res;
 
   call({
+    String? id,
     Enum$DriverStatus? status,
     String? fcmId,
   }) =>
@@ -9370,6 +9388,15 @@ const documentNodeMutationUpdateDriverStatus = DocumentNode(definitions: [
     name: NameNode(value: 'UpdateDriverStatus'),
     variableDefinitions: [
       VariableDefinitionNode(
+        variable: VariableNode(name: NameNode(value: 'id')),
+        type: NamedTypeNode(
+          name: NameNode(value: 'ID'),
+          isNonNull: true,
+        ),
+        defaultValue: DefaultValueNode(value: null),
+        directives: [],
+      ),
+      VariableDefinitionNode(
         variable: VariableNode(name: NameNode(value: 'status')),
         type: NamedTypeNode(
           name: NameNode(value: 'DriverStatus'),
@@ -9399,10 +9426,7 @@ const documentNodeMutationUpdateDriverStatus = DocumentNode(definitions: [
             value: ObjectValueNode(fields: [
               ObjectFieldNode(
                 name: NameNode(value: 'id'),
-                value: StringValueNode(
-                  value: '2',
-                  isBlock: false,
-                ),
+                value: VariableNode(name: NameNode(value: 'id')),
               ),
               ObjectFieldNode(
                 name: NameNode(value: 'update'),

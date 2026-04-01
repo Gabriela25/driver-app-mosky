@@ -19,6 +19,7 @@ import 'open_street_map_provider.dart';
 
 // ignore: must_be_immutable
 class GoogleMapProvider extends StatefulWidget {
+
   final CameraPosition _kGooglePlex = CameraPosition(
     target: LatLng(fallbackLocation.latitude, fallbackLocation.longitude),
     zoom: 14.4746,
@@ -39,16 +40,46 @@ class _GoogleMapProviderState extends State<GoogleMapProvider> {
 
   @override
   void initState() {
-    geo.Geolocator.getLastKnownPosition().then((value) async {
-      if (value == null) return;
-      (await _controller.future).animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-              target: LatLng(value.latitude, value.longitude), zoom: 15),
-        ),
-      );
-    });
     super.initState();
+
+    // Solicitar permisos de ubicación si no están otorgados
+    geo.Geolocator.checkPermission().then((permission) {
+      if (permission == geo.LocationPermission.denied) {
+        geo.Geolocator.requestPermission();
+      }
+    });
+
+    // Obtener la última ubicación conocida y centrar el mapa
+    geo.Geolocator.getLastKnownPosition().then((value) async {
+      if (value != null) {
+        (await _controller.future).animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(
+              target: LatLng(value.latitude, value.longitude),
+              zoom: 15,
+            ),
+          ),
+        );
+      } else {
+        // Si no hay última ubicación conocida, obtener la ubicación actual
+        geo.Geolocator.getCurrentPosition().then((currentPosition) async {
+          (await _controller.future).animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(
+                target: LatLng(currentPosition.latitude, currentPosition.longitude),
+                zoom: 15,
+              ),
+            ),
+          );
+        }).catchError((error) {
+          // Manejar errores al obtener la ubicación actual
+          debugPrint('Error al obtener la ubicación actual: $error');
+        });
+      }
+    }).catchError((error) {
+      // Manejar errores al obtener la última ubicación conocida
+      debugPrint('Error al obtener la última ubicación conocida: $error');
+    });
   }
 
   @override

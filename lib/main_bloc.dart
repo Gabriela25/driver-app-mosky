@@ -177,6 +177,7 @@ class MainBloc extends Bloc<MainEvent, MainState> {
     on<VersionStatusEvent>(((event, emit) => emit(RequireUpdateState())));
 
     on<DriverUpdated>((event, emit) {
+      print("Driver updated: ${event.driver.status}");
       switch (event.driver.status) {
         case Enum$DriverStatus.Online:
           emit(StatusOnline(driver: event.driver, orders: const []));

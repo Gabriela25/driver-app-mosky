@@ -19,13 +19,14 @@ import 'package:intl/intl.dart';
 import 'package:lifecycle/lifecycle.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:sms_firebase/drawer_view.dart';
-import 'package:sms_firebase/maps-screen.dart';
+
 import 'package:country_codes/country_codes.dart';
 
 import 'package:sms_firebase/query_result_view.dart';
 import 'package:sms_firebase/register/get_driver_dynamic.dart';
 import 'package:sms_firebase/register/register_view.dart';
 import 'package:sms_firebase/schema.gql.dart';
+import 'package:sms_firebase/settings/settings_page.dart';
 import 'package:sms_firebase/unregistered_driver_messages_view.dart';
 
 import 'config.dart';
@@ -149,8 +150,8 @@ class MyAppRoot extends StatelessWidget {
                         'announcements': (context) => const AnnouncementsView(),
                         'earnings': (context) => const EarningsView(),
                         'chat': (context) => const ChatView(),
-                        'wallet': (context) => const WalletView(),
-                        'settings': (context) => const SettingsPage()*/
+                        'wallet': (context) => const WalletView(),*/
+                        'settings': (context) => const SettingsPage()
                       },
                       theme: CustomTheme.theme1,
                       home: MyHomePage());
@@ -234,15 +235,21 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   return const RegisterView();
                 }
 
+                debugPrint('Version Code enviado: ${snapshot.data?.buildNumber ?? '999999'}');
+
                 return Query$Me$Widget(
                   options: Options$Query$Me(
                     variables: Variables$Query$Me(
                       versionCode: int.parse(
-                        snapshot.data?.buildNumber ?? '999999',
+                        //27/03/2026 comentado hasta revisar el tema de la version
+                       // snapshot.data?.buildNumber ?? '999999',
+                        '999999',
                       ),
                       id: driverId.toString(),
                     ),
                     onComplete: (result, parsedData) {
+                      print("Query 'Me' completed. Result: $result, Parsed Data: $parsedData");
+                      print("Parsed data: $parsedData");
                       if (parsedData?.requireUpdate ==
                           Enum$VersionStatus.MandatoryUpdate) {
                         mainBloc.add(
@@ -370,14 +377,21 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   Widget _getOnlineOfflineButton(BuildContext context, MainState state) {
     final mainBloc = context.read<MainBloc>();
 
+    debugPrint('Estado actual del conductor: $state'); // Log para verificar el estado
     return Mutation$UpdateDriverStatus$Widget(
         options: WidgetOptions$Mutation$UpdateDriverStatus(
       onCompleted: (result, parsedData) {
+         print("Mutación 'UpdateDriverStatus' completada. Result: $result, Parsed Data: $parsedData"); // Log para verificar el resultado de la mutación
         if (parsedData?.updateOneDriver == null) return;
         mainBloc.add(DriverUpdated(parsedData!.updateOneDriver));
       },
-      //onError: (error) => showOperationErrorMessage(context, error),
-    ), builder: (runMutation, result) {
+      onError: (error) {
+        debugPrint('Error al actualizar el estado del conductor: $error');
+      },
+    ),
+    builder: (runMutation, result) {
+      debugPrint('Resultado de la mutación: ${result}'); // Log para verificar el estado de la mutación
+
       return Container(
         decoration: const BoxDecoration(boxShadow: [
           BoxShadow(
@@ -396,10 +410,19 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     onPressed: (result?.isLoading ?? false)
                         ? null
                         : () async {
+                            print('result?.isLoading: ${result?.isLoading}'); // Log para verificar si la mutación está en proceso
+                            print("Botón presionado para cambiar a Online. Obteniendo FCM ID...");
                             final fcmId = await getFcmId(context);
-                            runMutation(Variables$Mutation$UpdateDriverStatus(
-                                status: Enum$DriverStatus.Online,
-                                fcmId: fcmId));
+                            print("FCM ID obtenido: $fcmId");
+                            final variables =
+                                Variables$Mutation$UpdateDriverStatus(
+                              id: Hive.box('user').get('driverId').toString(),
+                              status: Enum$DriverStatus.Online,
+                              fcmId: fcmId,
+                            );
+                            debugPrint(
+                                'UpdateDriverStatus ONLINE -> driverId local: ${Hive.box('user').get('driverId')}, payload: ${variables.toJson()}');
+                            runMutation(variables);
                           },
                     label: Text(S.of(context).statusOffline,
                         style: Theme.of(context).textTheme.headlineSmall),
@@ -413,9 +436,16 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         onPressed: (result?.isLoading ?? false)
                             ? null
                             : () {
-                                runMutation(
+                                final variables =
                                     Variables$Mutation$UpdateDriverStatus(
-                                        status: Enum$DriverStatus.Offline));
+                                  id: Hive.box('user')
+                                      .get('driverId')
+                                      .toString(),
+                                  status: Enum$DriverStatus.Offline,
+                                );
+                                debugPrint(
+                                    'UpdateDriverStatus OFFLINE -> driverId local: ${Hive.box('user').get('driverId')}, payload: ${variables.toJson()}');
+                                runMutation(variables);
                               },
                         label: Text(S.of(context).statusOnline,
                             style: Theme.of(context)
@@ -443,11 +473,12 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
     final fcmId = await FirebaseMessaging.instance.getToken();
     if (fcmId == null) return;
-
+    print("Actualizando FCM ID: $fcmId");
+    print("Driver ID para actualizar FCM ID: ${Hive.box('user').get('driverId')}");
     await client.mutate(
       Options$Mutation$UpdateDriverFCMId(
         variables: Variables$Mutation$UpdateDriverFCMId(
-          id: Hive.box('user').get('driverId').toString(),
+          id: Hive.box('user').get('driverId'),
           fcmId: fcmId,
         ),
       ),

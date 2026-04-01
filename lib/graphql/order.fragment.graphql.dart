@@ -4589,10 +4589,11 @@ class Fragment$BasicProfile {
               (l$media as Map<String, dynamic>)),
       softRejectionNote: (l$softRejectionNote as String?),
       status: fromJson$Enum$DriverStatus((l$status as String)),
-      currentOrders: (l$currentOrders as List<dynamic>)
-          .map((e) =>
+        currentOrders: (l$currentOrders as List<dynamic>?)
+            ?.map((e) =>
               Fragment$CurrentOrder.fromJson((e as Map<String, dynamic>)))
-          .toList(),
+            .toList() ??
+          const [],
       wallets: (l$wallets as List<dynamic>)
           .map((e) => Fragment$BasicProfile$wallets.fromJson(
               (e as Map<String, dynamic>)))
