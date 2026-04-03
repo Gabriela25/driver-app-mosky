@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:client_shared/components/marker_new.dart';
 import 'package:client_shared/map_providers.dart';
@@ -172,7 +173,7 @@ class _OpenStreetMapProviderState extends State<OpenStreetMapProvider>
                 }
               });
               final currentLocation = locationCubit.state.location;
-              if (state.markers.isNotEmpty) {
+              if (state is StatusInService && state.markers.isNotEmpty) {
                 final points = state.markers
                     .map((e) => e.position)
                     .followedBy(
@@ -182,6 +183,9 @@ class _OpenStreetMapProviderState extends State<OpenStreetMapProvider>
                     options: const FitBoundsOptions(
                         padding: EdgeInsets.only(
                             top: 130, left: 130, right: 130, bottom: 500)));
+              }
+              if (state is StatusOnline && currentLocation != null) {
+                controller.animateTo(dest: currentLocation, zoom: 16);
               }
               if (currentLocation == null &&
                   (state is StatusOnline || state is StatusInService)) {
@@ -259,7 +263,8 @@ void onLocationUpdated(
       variables: Variables$Mutation$UpdateDriverLocation(
           point: Input$PointInput(
               lat: position.latitude, lng: position.longitude))));
-  debugPrint('updateDriversLocationNew response: ${res.data}');
+     _debugPrintLarge(
+      'updateDriversLocationNew response', jsonEncode(res.data));
   if (res.hasException) {
     debugPrint('updateDriversLocationNew exception: ${res.exception}');
     debugPrint(
@@ -275,4 +280,18 @@ void onLocationUpdated(
       .map((e) => Fragment$AvailableOrder.fromJson(e.toJson()))
       .toList();
   bloc.add(AvailableOrdersUpdated(availableOrders));
+}
+
+void _debugPrintLarge(String label, String content, {int chunkSize = 800}) {
+  if (content.length <= chunkSize) {
+    debugPrint('$label: $content');
+    return;
+  }
+
+  for (int index = 0; index < content.length; index += chunkSize) {
+    final end =
+        (index + chunkSize < content.length) ? index + chunkSize : content.length;
+    debugPrint(
+        '$label [${(index / chunkSize).floor() + 1}]: ${content.substring(index, end)}');
+  }
 }

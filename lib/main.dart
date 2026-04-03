@@ -263,7 +263,7 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           DriverUpdated(parsedData!.driver),
                         );
                         locationCubit.setRadius(
-                          parsedData!.driver.searchDistance,
+                          parsedData.driver.searchDistance,
                         );
                       }
                     },
@@ -335,6 +335,17 @@ class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   width: MediaQuery.of(context).size.width,
                                   height: 320,
                                   child: OrdersCarouselView(),
+                                ),
+                              ),
+                            if (state is StatusInService &&
+                                (state.driver?.currentOrders.isNotEmpty ??
+                                    false))
+                              Positioned(
+                                bottom: 0,
+                                left: 0,
+                                right: 0,
+                                child: OrderStatusCardView(
+                                  order: state.driver!.currentOrders.first,
                                 ),
                               ),
                           ],

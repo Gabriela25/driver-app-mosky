@@ -5,17 +5,22 @@ import 'package:client_shared/config.dart';
 import 'package:client_shared/theme/theme-ride.dart';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:maps_toolkit/maps_toolkit.dart' as map_toolkit;
 
 
 import '../current_location_cubit.dart';
+import '../graphql/order.fragment.graphql.dart';
 import '../main_bloc.dart';
+import '../schema.gql.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'open_street_map_provider.dart';
+
+const _googleDirectionsApiKey = 'AIzaSyDj22AgylG4QwGNe-unUh6zKjZlAC5Q3eg';
 
 // ignore: must_be_immutable
 class GoogleMapProvider extends StatefulWidget {
@@ -33,10 +38,23 @@ class GoogleMapProvider extends StatefulWidget {
 
 class _GoogleMapProviderState extends State<GoogleMapProvider> {
   final Completer<GoogleMapController> _controller = Completer();
+  final PolylinePoints _polylinePoints =
+      PolylinePoints(apiKey: _googleDirectionsApiKey);
+  final Map<String, List<LatLng>> _routeCache = {};
+
+  Set<Marker> _serviceMarkers = <Marker>{};
+  Set<Polyline> _servicePolylines = <Polyline>{};
+  int _serviceOverlayRequestId = 0;
 
   final Stream<geo.Position> streamServerLocation =
       geo.Geolocator.getPositionStream(
           locationSettings: const geo.LocationSettings(distanceFilter: 50));
+
+  static const List<Enum$OrderStatus> _pickupStatuses = [
+    Enum$OrderStatus.DriverAccepted,
+    Enum$OrderStatus.Arrived,
+    Enum$OrderStatus.WaitingForPrePay,
+  ];
 
   @override
   void initState() {
@@ -85,11 +103,7 @@ class _GoogleMapProviderState extends State<GoogleMapProvider> {
   @override
   Widget build(BuildContext context) {
     final mainBloc = context.read<MainBloc>();
-    return FutureBuilder(
-        future: BitmapDescriptor.fromAssetImage(
-            const ImageConfiguration(size: Size(48, 48)), 'images/marker.png'),
-        builder: (context, bitmapDescriptorSnapshot) {
-          return BlocConsumer<MainBloc, MainState>(
+    return BlocConsumer<MainBloc, MainState>(
               listenWhen: (previous, next) =>
                   next is StatusOnline || next is StatusInService,
               listener: (context, state) async {
@@ -100,24 +114,24 @@ class _GoogleMapProviderState extends State<GoogleMapProvider> {
                 });
                 final currentLocation =
                     context.read<CurrentLocationCubit>().state.location;
-                if (state.markers.isNotEmpty) {
-                  final points = state.markers
-                      .map((e) =>
-                          LatLng(e.position.latitude, e.position.longitude))
-                      .followedBy(currentLocation != null
-                          ? [
-                              LatLng(currentLocation.latitude,
-                                  currentLocation.longitude)
-                            ]
-                          : [])
-                      .toList();
-                  (await _controller.future).animateCamera(
-                      CameraUpdate.newLatLngBounds(
-                          boundsFromLatLngList(points), 100));
+                if (state is StatusInService) {
+                  await _refreshServiceOverlays(
+                    state,
+                    currentLocation == null
+                        ? null
+                        : LatLng(
+                            currentLocation.latitude,
+                            currentLocation.longitude,
+                          ),
+                  );
+                } else if (_serviceMarkers.isNotEmpty ||
+                    _servicePolylines.isNotEmpty) {
+                  setState(() {
+                    _serviceMarkers = <Marker>{};
+                    _servicePolylines = <Polyline>{};
+                  });
                 }
-                if (state is StatusOnline &&
-                    state.orders.isEmpty &&
-                    currentLocation != null) {
+                if (state is StatusOnline && currentLocation != null) {
                   (await _controller.future).animateCamera(
                       CameraUpdate.newLatLngZoom(
                           LatLng(currentLocation.latitude,
@@ -135,6 +149,19 @@ class _GoogleMapProviderState extends State<GoogleMapProvider> {
                     children: [
                       BlocConsumer<CurrentLocationCubit, CurrentLocationState>(
                         listener: (context, currentLocationState) async {
+                          if (state is StatusInService) {
+                            await _refreshServiceOverlays(
+                              state,
+                              currentLocationState.location == null
+                                  ? null
+                                  : LatLng(
+                                      currentLocationState.location!.latitude,
+                                      currentLocationState.location!.longitude,
+                                    ),
+                            );
+                            return;
+                          }
+
                           if (currentLocationState.location == null ||
                               currentLocationState.radius == null ||
                               state is! StatusOnline ||
@@ -169,28 +196,9 @@ class _GoogleMapProviderState extends State<GoogleMapProvider> {
                             initialCameraPosition: widget._kGooglePlex,
                             padding: const EdgeInsets.only(bottom: 80),
                             myLocationEnabled: true,
-                            polylines: (state is StatusInService &&
-                                    ((state)
-                                            .driver
-                                            ?.currentOrders
-                                            .first
-                                            .directions
-                                            ?.isNotEmpty ??
-                                        false))
-                                ? <Polyline>{
-                                    Polyline(
-                                        polylineId:
-                                            const PolylineId('directions'),
-                                        points: state.driver?.currentOrders
-                                                .first.directions
-                                                ?.map(
-                                                    (e) => LatLng(e.lat, e.lng))
-                                                .toList() ??
-                                            [],
-                                        color: CustomTheme.primaryColors,
-                                        width: 5)
-                                  }
-                                : <Polyline>{},
+                            polylines: state is StatusInService
+                              ? _servicePolylines
+                              : <Polyline>{},
                             circles: state.driver?.searchDistance == null ||
                                     currentLocationState.location == null
                                 ? <Circle>{}
@@ -216,14 +224,18 @@ class _GoogleMapProviderState extends State<GoogleMapProvider> {
                             onMapCreated: (GoogleMapController controller) {
                               _controller.complete(controller);
                             },
-                            markers: state.markers
-                                .map((e) => Marker(
-                                    markerId: MarkerId(e.id),
-                                    icon: bitmapDescriptorSnapshot.data ??
-                                        BitmapDescriptor.defaultMarker,
-                                    position: LatLng(e.position.latitude,
-                                        e.position.longitude)))
-                                .toSet(),
+                            markers: state is StatusInService
+                                ? _serviceMarkers
+                                : state.markers
+                                    .map((e) => Marker(
+                                        markerId: MarkerId(e.id),
+                                        icon: BitmapDescriptor
+                                            .defaultMarkerWithHue(
+                                                BitmapDescriptor.hueRed),
+                                        position: LatLng(
+                                            e.position.latitude,
+                                            e.position.longitude)))
+                                    .toSet(),
                           );
                         },
                       ),
@@ -239,7 +251,217 @@ class _GoogleMapProviderState extends State<GoogleMapProvider> {
                             })
                     ],
                   ));
+  }
+
+  Future<void> _refreshServiceOverlays(
+      StatusInService state, LatLng? currentLocation) async {
+    final currentOrder = _getCurrentOrder(state);
+    if (currentOrder == null || currentOrder.points.isEmpty) {
+      if (_serviceMarkers.isNotEmpty || _servicePolylines.isNotEmpty) {
+        setState(() {
+          _serviceMarkers = <Marker>{};
+          _servicePolylines = <Polyline>{};
         });
+      }
+      return;
+    }
+
+    final pickupPoint = _toGoogleLatLng(currentOrder.points.first);
+    final destinationPoint = _getDestinationPoint(currentOrder);
+    if (destinationPoint == null) {
+      return;
+    }
+
+    final requestId = ++_serviceOverlayRequestId;
+    final markers = <Marker>{
+      Marker(
+        markerId: const MarkerId('pickup-marker'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        position: pickupPoint,
+      ),
+      Marker(
+        markerId: const MarkerId('destination-marker'),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        position: destinationPoint,
+      ),
+    };
+
+    final polylines = <Polyline>{};
+    if (currentLocation != null && _pickupStatuses.contains(currentOrder.status)) {
+      final driverToPickup = await _getDriverToPickupRoute(
+        currentLocation,
+        pickupPoint,
+      );
+      if (driverToPickup.isNotEmpty) {
+        polylines.add(Polyline(
+          polylineId: const PolylineId('driver-to-pickup'),
+          points: driverToPickup,
+          color: Colors.amber,
+          width: 9,
+          zIndex: 2,
+          startCap: Cap.roundCap,
+          endCap: Cap.roundCap,
+        ));
+      }
+    }
+
+    final pickupToDestination = await _getPickupToDestinationRoute(currentOrder);
+    if (pickupToDestination.isNotEmpty) {
+      polylines.add(Polyline(
+        polylineId: const PolylineId('pickup-to-destination'),
+        points: pickupToDestination,
+        color: Colors.blue,
+        width: 6,
+        zIndex: 1,
+        startCap: Cap.roundCap,
+        endCap: Cap.roundCap,
+      ));
+    }
+
+    if (!mounted || requestId != _serviceOverlayRequestId) {
+      return;
+    }
+
+    setState(() {
+      _serviceMarkers = markers;
+      _servicePolylines = polylines;
+    });
+
+    final focusPoints = <LatLng>[
+      if (currentLocation != null) currentLocation,
+      pickupPoint,
+      destinationPoint,
+    ];
+    await _focusCamera(focusPoints);
+  }
+
+  Fragment$CurrentOrder? _getCurrentOrder(MainState state) {
+    final currentOrders = state.driver?.currentOrders;
+    if (currentOrders == null || currentOrders.isEmpty) {
+      return null;
+    }
+    return currentOrders.first;
+  }
+
+  LatLng _toGoogleLatLng(Fragment$Point point) {
+    return LatLng(point.lat, point.lng);
+  }
+
+  LatLng? _getDestinationPoint(Fragment$CurrentOrder order) {
+    if (order.points.length < 2) {
+      return null;
+    }
+
+    final destinationIndex = order.destinationArrivedTo + 1 < order.points.length
+        ? order.destinationArrivedTo + 1
+        : order.points.length - 1;
+    return _toGoogleLatLng(order.points[destinationIndex]);
+  }
+
+  Future<List<LatLng>> _getPickupToDestinationRoute(
+      Fragment$CurrentOrder order) async {
+    final backendDirections = order.directions
+            ?.map((e) => LatLng(e.lat, e.lng))
+            .where((point) => point.latitude != 0 || point.longitude != 0)
+            .toList() ??
+        <LatLng>[];
+    if (backendDirections.isNotEmpty) {
+      return backendDirections;
+    }
+
+    final destinationPoint = _getDestinationPoint(order);
+    if (destinationPoint == null) {
+      return <LatLng>[];
+    }
+
+    return _getDrivingRoute(_toGoogleLatLng(order.points.first), destinationPoint);
+  }
+
+  Future<List<LatLng>> _getDriverToPickupRoute(
+    LatLng currentLocation,
+    LatLng pickupPoint,
+  ) async {
+    final route = await _getDrivingRoute(currentLocation, pickupPoint);
+    if (route.isNotEmpty) {
+      return route;
+    }
+
+    final distance = geo.Geolocator.distanceBetween(
+      currentLocation.latitude,
+      currentLocation.longitude,
+      pickupPoint.latitude,
+      pickupPoint.longitude,
+    );
+
+    if (distance <= 35) {
+      return [currentLocation, pickupPoint];
+    }
+
+    return <LatLng>[];
+  }
+
+  Future<List<LatLng>> _getDrivingRoute(LatLng origin, LatLng destination) async {
+    final cacheKey =
+        '${origin.latitude},${origin.longitude}->${destination.latitude},${destination.longitude}';
+    final cached = _routeCache[cacheKey];
+    if (cached != null) {
+      return cached;
+    }
+
+    final result = await _polylinePoints.getRouteBetweenCoordinates(
+      request: PolylineRequest(
+        origin: PointLatLng(origin.latitude, origin.longitude),
+        destination: PointLatLng(destination.latitude, destination.longitude),
+        mode: TravelMode.driving,
+      ),
+    );
+
+    final route = result.points
+        .map((point) => LatLng(point.latitude, point.longitude))
+        .toList();
+    if (route.isNotEmpty) {
+      _routeCache[cacheKey] = route;
+    }
+    return route;
+  }
+
+  Future<void> _focusCamera(List<LatLng> points) async {
+    if (points.isEmpty) {
+      debugPrint('GoogleMapProvider._focusCamera -> no points');
+      return;
+    }
+
+    final controller = await _controller.future;
+    if (points.length == 1) {
+      debugPrint(
+          'GoogleMapProvider._focusCamera -> single point lat=${points.first.latitude}, lng=${points.first.longitude}');
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(points.first, 16),
+      );
+      return;
+    }
+
+    final bounds = boundsFromLatLngList(points);
+    final sameLatitude =
+        (bounds.northeast.latitude - bounds.southwest.latitude).abs() <
+            0.0001;
+    final sameLongitude =
+        (bounds.northeast.longitude - bounds.southwest.longitude).abs() <
+            0.0001;
+
+    debugPrint(
+        'GoogleMapProvider._focusCamera -> bounds SW=(${bounds.southwest.latitude},${bounds.southwest.longitude}) NE=(${bounds.northeast.latitude},${bounds.northeast.longitude}) sameLat=$sameLatitude sameLng=$sameLongitude points=${points.map((p) => '(${p.latitude},${p.longitude})').join(' | ')}');
+
+    if (sameLatitude && sameLongitude) {
+      await controller.animateCamera(
+        CameraUpdate.newLatLngZoom(points.first, 16),
+      );
+      return;
+    }
+
+    await controller.animateCamera(
+      CameraUpdate.newLatLngBounds(bounds, 100),
+    );
   }
 }
 

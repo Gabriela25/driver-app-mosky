@@ -32,6 +32,12 @@ class OrderStatusCardView extends StatelessWidget {
   final Fragment$CurrentOrder order;
   const OrderStatusCardView({required this.order, super.key});
 
+  static const List<Enum$OrderStatus> _pickupStatuses = [
+    Enum$OrderStatus.DriverAccepted,
+    Enum$OrderStatus.Arrived,
+    Enum$OrderStatus.WaitingForPrePay,
+  ];
+
   @override
   Widget build(BuildContext context) {
 
@@ -313,11 +319,13 @@ class OrderStatusCardView extends StatelessWidget {
     final availableMaps = await MapLauncher.installedMaps;
     String title = S.of(context).navigation_dialog_title_pickup_point;
     Coords coords = Coords(order.points.first.lat, order.points.first.lng);
-    if (order.status != Enum$OrderStatus.DriverAccepted &&
-        order.status != Enum$OrderStatus.Arrived) {
+    if (!_pickupStatuses.contains(order.status)) {
+      final destinationIndex = order.destinationArrivedTo + 1 < order.points.length
+          ? order.destinationArrivedTo + 1
+          : order.points.length - 1;
       title = S.of(context).navigation_title_destination_point;
-      coords = Coords(order.points[order.destinationArrivedTo + 1].lat,
-          order.points[order.destinationArrivedTo + 1].lng);
+      coords = Coords(order.points[destinationIndex].lat,
+          order.points[destinationIndex].lng);
     }
     showModalBottomSheet(
       context: context,

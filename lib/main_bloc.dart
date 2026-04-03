@@ -106,62 +106,71 @@ class StatusOnline extends MainState {
 class StatusInService extends MainState {
   final LatLng? currentLocation;
 
-  static List<Enum$OrderStatus> statusesWithMarker = [
+  static const List<Enum$OrderStatus> statusesWithMarker = [
     Enum$OrderStatus.DriverAccepted,
     Enum$OrderStatus.Arrived,
-    Enum$OrderStatus.Started
+    Enum$OrderStatus.WaitingForPrePay,
+    Enum$OrderStatus.Started,
+    Enum$OrderStatus.WaitingForPostPay,
+  ];
+
+  static const List<Enum$OrderStatus> pickupStatuses = [
+    Enum$OrderStatus.DriverAccepted,
+    Enum$OrderStatus.Arrived,
+    Enum$OrderStatus.WaitingForPrePay,
   ];
 
   StatusInService(driver, {this.currentLocation})
-      : super(
-            driver,
-            ((driver?.currentOrders.isEmpty ?? true) ||
-                    !statusesWithMarker
-                        .contains(driver.currentOrders.first.status)
-                ? []
-                : ((driver?.currentOrders.first.status ==
-                            Enum$OrderStatus.DriverAccepted ||
-                        driver?.currentOrders.first.status ==
-                            Enum$OrderStatus.Arrived)
-                    ? [
-                        MarkerData(
-                            id: driver!.currentOrders.first.points[0].lat
-                                .toString(),
-                            position: LatLng(
-                                driver?.currentOrders.first.points[0].lat,
-                                driver?.currentOrders.first.points[0].lng),
-                            address: driver?.currentOrders.first.addresses[0])
-                      ]
-                    : [
-                        MarkerData(
-                            id: driver!
-                                .currentOrders
-                                .first
-                                .points[driver!.currentOrders.first
-                                        .destinationArrivedTo +
-                                    1]
-                                .lat
-                                .toString(),
-                            position: LatLng(
-                                driver
-                                    ?.currentOrders
-                                    .first
-                                    .points[driver!.currentOrders.first
-                                            .destinationArrivedTo +
-                                        1]
-                                    .lat,
-                                driver
-                                    ?.currentOrders
-                                    .first
-                                    .points[driver!.currentOrders.first
-                                            .destinationArrivedTo +
-                                        1]
-                                    .lng),
-                            address: driver?.currentOrders.first.addresses[
-                                driver!.currentOrders.first
-                                        .destinationArrivedTo +
-                                    1])
-                      ])));
+      : super(driver, _buildMarkers(driver));
+
+  static List<MarkerData> _buildMarkers(Fragment$BasicProfile? driver) {
+    final currentOrder = driver?.currentOrders.firstOrNull;
+    if (currentOrder == null ||
+        !statusesWithMarker.contains(currentOrder.status) ||
+        currentOrder.points.isEmpty) {
+      print(
+          'StatusInService._buildMarkers -> no markers. order=${currentOrder?.id}, status=${currentOrder?.status}, points=${currentOrder?.points.length ?? 0}');
+      return [];
+    }
+
+    final markerIndex = _getMarkerIndex(currentOrder);
+    if (markerIndex < 0 || markerIndex >= currentOrder.points.length) {
+      print(
+          'StatusInService._buildMarkers -> invalid markerIndex=$markerIndex for order=${currentOrder.id}, points=${currentOrder.points.length}, destinationArrivedTo=${currentOrder.destinationArrivedTo}');
+      return [];
+    }
+
+    final point = currentOrder.points[markerIndex];
+    final addressIndex = currentOrder.addresses.isEmpty
+        ? -1
+        : (markerIndex < currentOrder.addresses.length
+            ? markerIndex
+            : currentOrder.addresses.length - 1);
+
+    print(
+        'StatusInService._buildMarkers -> order=${currentOrder.id}, status=${currentOrder.status}, markerIndex=$markerIndex, lat=${point.lat}, lng=${point.lng}, addressIndex=$addressIndex, address=${addressIndex >= 0 ? currentOrder.addresses[addressIndex] : ''}, points=${currentOrder.points.map((p) => '(${p.lat},${p.lng})').join(' | ')}');
+
+    return [
+      MarkerData(
+        id: 'current-order-$markerIndex-${point.lat}-${point.lng}',
+        position: LatLng(point.lat, point.lng),
+        address: addressIndex >= 0 ? currentOrder.addresses[addressIndex] : '',
+      )
+    ];
+  }
+
+  static int _getMarkerIndex(Fragment$CurrentOrder order) {
+    if (pickupStatuses.contains(order.status)) {
+      return 0;
+    }
+
+    final destinationIndex = order.destinationArrivedTo + 1;
+    if (destinationIndex < order.points.length) {
+      return destinationIndex;
+    }
+
+    return order.points.length - 1;
+  }
 
   @override
   List<Object?> get props => [
@@ -178,6 +187,12 @@ class MainBloc extends Bloc<MainEvent, MainState> {
 
     on<DriverUpdated>((event, emit) {
       print("Driver updated: ${event.driver.status}");
+      print(
+          "DriverUpdated currentOrders length: ${event.driver.currentOrders.length}");
+      if (event.driver.currentOrders.isNotEmpty) {
+        print(
+            "DriverUpdated first currentOrder: id=${event.driver.currentOrders.first.id}, status=${event.driver.currentOrders.first.status}");
+      }
       switch (event.driver.status) {
         case Enum$DriverStatus.Online:
           emit(StatusOnline(driver: event.driver, orders: const []));
@@ -220,10 +235,12 @@ class MainBloc extends Bloc<MainEvent, MainState> {
       final sumNewIds = orders.fold<int>(
           0, (value, element) => value + int.parse(element.id));
       if (sumNewIds != sumOldIds) {
+        final selectedOrderId = (state as StatusOnline).selectedOrder?.id;
         emit(StatusOnline(
             driver: state.driver,
             orders: orders,
-            selectedOrder: orders.isNotEmpty ? orders.first : null));
+            selectedOrder: orders.firstWhereOrNull(
+                (element) => element.id == selectedOrderId)));
       }
     });
 
@@ -244,9 +261,7 @@ class MainBloc extends Bloc<MainEvent, MainState> {
         emit(StatusOnline(
             driver: state.driver,
             orders: newOrders,
-            selectedOrder: (state as StatusOnline).orders.isEmpty
-                ? event.order
-                : (state as StatusOnline).selectedOrder));
+          selectedOrder: (state as StatusOnline).selectedOrder));
       }
     });
 
@@ -263,7 +278,7 @@ class MainBloc extends Bloc<MainEvent, MainState> {
             orders: (state as StatusOnline).orders,
             selectedOrder:
                 (state as StatusOnline).selectedOrder?.id == event.order.id
-                    ? (state as StatusOnline).orders.firstOrNull
+              ? null
                     : (state as StatusOnline).selectedOrder));
       }
     });
@@ -285,17 +300,34 @@ class MainBloc extends Bloc<MainEvent, MainState> {
         Enum$OrderStatus.WaitingForReview
       ];
       final order = event.order;
+      print(
+          "CurrentOrderUpdated received: id=${order.id}, status=${order.status}");
+      print(
+          "CurrentOrderUpdated before local sync currentOrders length: ${state.driver?.currentOrders.length ?? 0}");
       if (endedStatuses.contains(order.status)) {
         // TODO: Verify commenting out these lines didn't caused malfunction, if so, remove them
         // state.driver!.status = Enum$DriverStatus.Online;
         // state.driver!.currentOrders = [];
+        print("CurrentOrderUpdated ended status detected, returning to StatusOnline");
         emit(StatusOnline(driver: state.driver, orders: const []));
       } else {
         if (state.driver?.currentOrders.isNotEmpty ?? false) {
+          print(
+              "CurrentOrderUpdated removing previous currentOrder: id=${state.driver?.currentOrders.first.id}, status=${state.driver?.currentOrders.first.status}");
           state.driver?.currentOrders.removeAt(0);
         }
         state.driver?.currentOrders
             .add(Query$Me$driver$currentOrders.fromJson(order.toJson()));
+        print(
+            "CurrentOrderUpdated after local sync currentOrders length: ${state.driver?.currentOrders.length ?? 0}");
+        if (state.driver?.currentOrders.isNotEmpty ?? false) {
+          print(
+              "CurrentOrderUpdated first currentOrder after sync: id=${state.driver?.currentOrders.first.id}, status=${state.driver?.currentOrders.first.status}");
+        }
+
+        final acceptedOrder = state.driver?.currentOrders.firstOrNull;
+        print(
+            "ORDER ACCEPTED -> driverStatus=${state.driver?.status}, currentOrders=${state.driver?.currentOrders.length ?? 0}, orderId=${acceptedOrder?.id}, orderStatus=${acceptedOrder?.status}, pickup=${acceptedOrder?.addresses.firstOrNull}, destination=${acceptedOrder?.addresses.length != null && (acceptedOrder?.addresses.length ?? 0) > 1 ? acceptedOrder?.addresses[1] : null}");
 
         emit(StatusInService(state.driver));
       }

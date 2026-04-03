@@ -22,11 +22,13 @@ import 'l10n/messages.dart';
 class OrderItemView extends StatelessWidget {
   final Fragment$AvailableOrder order;
   final OrderAcceptedCallback onAcceptCallback;
+  final VoidCallback? onTap;
   final bool isActionActive;
   const OrderItemView(
       {super.key,
       required this.order,
       required this.onAcceptCallback,
+      this.onTap,
       required this.isActionActive});
 
   @override
@@ -47,6 +49,12 @@ class OrderItemView extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: onTap,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
               Row(
                 children: [
                   UserAvatarView(
@@ -140,6 +148,9 @@ class OrderItemView extends StatelessWidget {
                             name: e.name,
                           ))
                       .toList()),
+                  ],
+                ),
+              ),
               const SizedBox(height: 4),
               SizedBox(
                 width: double.infinity,

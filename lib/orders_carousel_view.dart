@@ -47,12 +47,23 @@ class OrdersCarouselView extends StatelessWidget {
             return Mutation$UpdateOrderStatus$Widget(
                 options: WidgetOptions$Mutation$UpdateOrderStatus(
                     onCompleted: (result, parsedData) {
+                      print("Order status updated: $result");
+                    print(
+                      "UpdateOrderStatus parsedData.updateOneOrder is null: ${parsedData?.updateOneOrder == null}");
+                    if (parsedData?.updateOneOrder != null) {
+                    print(
+                      "UpdateOrderStatus order: id=${parsedData!.updateOneOrder.id}, status=${parsedData.updateOneOrder.status}, destinationArrivedTo=${parsedData.updateOneOrder.destinationArrivedTo}");
+                    print(
+                      "UpdateOrderStatus order points=${parsedData.updateOneOrder.points.length}, addresses=${parsedData.updateOneOrder.addresses.length}, directions=${parsedData.updateOneOrder.directions?.length ?? 0}");
+                    }
                       if (parsedData == null) return;
                       mainBloc
                           .add(CurrentOrderUpdated(parsedData.updateOneOrder));
                     },
-                    onError: (error) =>
-                        showOperationErrorMessage(context, error)),
+                      onError: (error) {
+                        debugPrint('Error accepting order: $error');
+                        showOperationErrorMessage(context, error);
+                      }),
                 builder: (runMutation, result) =>
                     BlocBuilder<MainBloc, MainState>(builder: (context, state) {
                       if ((state as StatusOnline).orders.isEmpty) {
@@ -68,13 +79,42 @@ class OrdersCarouselView extends StatelessWidget {
                           itemBuilder: (context, index) => OrderItemView(
                             order: state.orders[index],
                             isActionActive: !(result?.isLoading ?? false),
+                            onTap: () =>
+                                mainBloc.add(SelectedOrderChanged(index)),
                             onAcceptCallback: (String orderId) async {
-                              runMutation(
-                                Variables$Mutation$UpdateOrderStatus(
-                                  orderId: orderId,
-                                  status: Enum$OrderStatus.DriverAccepted,
-                                ),
-                              );
+                              try {
+                                final mutationResult = await runMutation(
+                                  Variables$Mutation$UpdateOrderStatus(
+                                    orderId: orderId,
+                                    status: Enum$OrderStatus.DriverAccepted,
+                                  ),
+                                );
+                                final eagerResult =
+                                  (mutationResult as dynamic).eagerResult;
+                                final networkResult =
+                                  await (mutationResult as dynamic)
+                                    .networkResult;
+                                print(
+                                  'UpdateOrderStatus eagerResult: $eagerResult');
+                                print(
+                                  'UpdateOrderStatus networkResult: $networkResult');
+                                print(
+                                  'UpdateOrderStatus networkResult.data: ${networkResult.data}');
+                                final rawOrder = networkResult.data == null
+                                  ? null
+                                  : networkResult.data['updateOneOrder']
+                                    as Map<String, dynamic>?;
+                                print(
+                                  'UpdateOrderStatus raw destinationArrivedTo: ${rawOrder?['destinationArrivedTo']} (${rawOrder?['destinationArrivedTo']?.runtimeType})');
+                                print(
+                                  'UpdateOrderStatus raw waitMinutes: ${rawOrder?['waitMinutes']} (${rawOrder?['waitMinutes']?.runtimeType})');
+                                print(
+                                  'UpdateOrderStatus networkResult.exception: ${networkResult.exception}');
+                              } catch (error, stackTrace) {
+                                print(
+                                    'UpdateOrderStatus runMutation threw: $error');
+                                print(stackTrace);
+                              }
                             },
                           ),
                         ),
